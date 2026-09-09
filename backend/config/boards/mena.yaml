@@ -1,0 +1,36 @@
+# MENA — Gulf and wider regional employers.
+#
+# Every token below returned a live response with a non-zero posting count when
+# last probed (2026-09-08); that count is noted above each entry. Board tokens decay —
+# companies change ATS vendor and rename boards — so .github/workflows/boards.yml
+# re-probes this registry weekly, and `careerpilot boards validate` does it on demand.
+#
+# Terms and conduct per platform: docs/DATA_SOURCES.md
+
+# 20 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:careem
+  config:
+    board_token: careem
+    company_name: Careem
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 29 postings at last probe
+- adapter: workable
+  name: workable:foodics
+  config:
+    subdomain: foodics
+    company_name: Foodics
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 30 postings at last probe
+- adapter: workable
+  name: workable:salla
+  config:
+    subdomain: salla
+    company_name: Salla
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1

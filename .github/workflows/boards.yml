@@ -1,0 +1,30 @@
+name: Board liveness
+
+# Board tokens are claims about the world, and claims decay. This sweep is what
+# keeps config/boards/*.yaml honest between manual curation passes.
+on:
+  schedule:
+    - cron: "0 6 * * 1"   # Mondays, 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e "."
+      - name: Probe every curated board
+        run: python -m app.cli boards validate --write board-health.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: board-health
+          path: backend/board-health.json
+          retention-days: 90

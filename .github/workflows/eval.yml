@@ -1,0 +1,37 @@
+name: Evaluation gate
+
+# Phase 2 deliverable (§9.6): the ranking harness runs on any change to
+# matching, scoring or model configuration, and a drop of more than 2 points in
+# NDCG@10 fails the build.
+#
+# The workflow exists now, wired and skipping, so that the gate is a
+# precondition of the first matching commit rather than an afterthought.
+on:
+  pull_request:
+    paths:
+      - "backend/app/domain/matching/**"
+      - "backend/app/domain/scoring/**"
+      - "backend/app/eval/**"
+      - "backend/config/config.yaml"
+  workflow_dispatch:
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Harness status
+        run: |
+          if [ ! -f app/eval/harness.py ]; then
+            echo "::notice::Evaluation harness is a Phase 2 deliverable and is not built yet."
+            echo "Matching and scoring code must not merge before it exists (§9.6)."
+            exit 0
+          fi
+          pip install -e ".[dev,ml]"
+          python -m app.eval.harness --check-regression --max-drop 2.0

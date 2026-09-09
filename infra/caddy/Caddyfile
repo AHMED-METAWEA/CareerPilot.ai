@@ -1,0 +1,37 @@
+# TLS termination and HTTP/3 (§15.2). Caddy obtains and renews certificates
+# automatically; the API and worker never see plaintext HTTP from the internet.
+
+{
+	email admin@careerpilot.ai
+}
+
+careerpilot.ai, www.careerpilot.ai {
+	encode zstd gzip
+
+	# HSTS: TLS 1.3 only is enforced by Caddy's defaults (§16.2).
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# The admin surface is not exposed publicly. Phase 3 replaces the shared
+	# token with real authentication; until then it stays on the private network.
+	@admin path /api/v1/admin/*
+	respond @admin 404
+
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+
+	handle /health* {
+		reverse_proxy api:8000
+	}
+
+	# Everything else is the Next.js frontend on Vercel (§15.1).
+	handle {
+		redir https://app.careerpilot.ai{uri}
+	}
+}

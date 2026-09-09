@@ -1,0 +1,59 @@
+# Local development topology (§15.2). Production runs the same three images
+# behind Caddy on a single Oracle ARM host.
+
+name: careerpilot
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: careerpilot
+      POSTGRES_PASSWORD: careerpilot
+      POSTGRES_DB: careerpilot
+    ports:
+      - "5433:5432"      # 5433 on the host: 5432 is usually a local Postgres
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U careerpilot -d careerpilot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.api
+    environment:
+      DATABASE_URL: postgresql+psycopg://careerpilot:careerpilot@db:5432/careerpilot
+      CAREERPILOT_ENV: local
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-local-admin-token}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - model_cache:/models
+
+  worker:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.worker
+    environment:
+      DATABASE_URL: postgresql+psycopg://careerpilot:careerpilot@db:5432/careerpilot
+      CAREERPILOT_ENV: local
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - model_cache:/models   # shared with the API: weights load once per process
+    # A discovery or detail-fetch task can run for a minute under the per-host
+    # rate limit. Docker's 10-second default kills the worker mid-task, and the
+    # claim then waits out `queue.lock_timeout_minutes` before another worker
+    # can pick it up.
+    stop_grace_period: 90s
+
+volumes:
+  db_data:
+  model_cache:

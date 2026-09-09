@@ -1,0 +1,18 @@
+# Egypt — employers hiring in Cairo, Giza and Alexandria.
+#
+# Every token below returned a live response with a non-zero posting count when
+# last probed (2026-09-08); that count is noted above each entry. Board tokens decay —
+# companies change ATS vendor and rename boards — so .github/workflows/boards.yml
+# re-probes this registry weekly, and `careerpilot boards validate` does it on demand.
+#
+# Terms and conduct per platform: docs/DATA_SOURCES.md
+
+# 102 postings at last probe
+- adapter: workable
+  name: workable:robusta
+  config:
+    subdomain: robusta
+    company_name: Robusta
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1

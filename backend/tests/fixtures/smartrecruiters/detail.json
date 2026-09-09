@@ -1,0 +1,138 @@
+{
+  "id": "744000120624847",
+  "name": "Franchisee UK & Ireland",
+  "uuid": "9a79267a-1159-49ea-ac24-0a336fa6abdd",
+  "jobId": "d5f076ff-09cf-4c5b-9deb-d2adfb4b8826",
+  "jobAdId": "b650dd99-8218-4029-9238-bc1dca033eba",
+  "defaultJobAd": true,
+  "refNumber": "REF4046W",
+  "company": {
+    "name": "McDonald's Corporation",
+    "identifier": "McDonaldsCorporation"
+  },
+  "location": {
+    "city": "London",
+    "region": "England",
+    "country": "gb",
+    "address": "11-59 High Road",
+    "postalCode": "N2 8AW",
+    "remote": false,
+    "hybrid": false,
+    "latitude": "51.58789179999999",
+    "longitude": "-0.164487",
+    "fullLocation": "London, England, United Kingdom"
+  },
+  "customField": [
+    {
+      "fieldId": "5d408f213a7b231c8f0ddd88",
+      "fieldLabel": "McD Function",
+      "valueId": "e371f7be-d0b5-423a-9e71-7ec0b582dad3",
+      "valueLabel": "Licensing & Field Services - UK&I"
+    },
+    {
+      "fieldId": "5d2d0b32fef2c732566f5ea0",
+      "fieldLabel": "Brands",
+      "valueId": "ba4c59c4-ab5a-40ff-b0be-4565f618c9c3",
+      "valueLabel": "McDonalds UK & ROI (Franchisee)"
+    },
+    {
+      "fieldId": "602be917fb68c634b5e90ab2",
+      "fieldLabel": "Employee Type",
+      "valueId": "f8f27f16-3cd3-4821-9d24-fc1502f6ca7d",
+      "valueLabel": "N/A"
+    },
+    {
+      "fieldId": "COUNTRY",
+      "fieldLabel": "Country/Region",
+      "valueId": "gb",
+      "valueLabel": "United Kingdom"
+    },
+    {
+      "fieldId": "5ddc3352aafaf0098ab79b21",
+      "fieldLabel": "Role Type",
+      "valueId": "4dff6e98-a43c-4ea8-86e2-50565f287743",
+      "valueLabel": "N/A"
+    },
+    {
+      "fieldId": "5d408fbf2e4d0256f4f23a49",
+      "fieldLabel": "Relocation Assistance Available",
+      "valueId": "2d92d3bc-e4b5-4f2f-a85a-1a4135ec53b1",
+      "valueLabel": "No"
+    },
+    {
+      "fieldId": "5d5142c63917da1954a133c1",
+      "fieldLabel": "McDonald's Office Location",
+      "valueId": "895aa05a-250e-4e3d-8a1a-d1ac4c06cedd",
+      "valueLabel": "UK - East Finchley"
+    },
+    {
+      "fieldId": "5d409074afc8f557e10b112c",
+      "fieldLabel": "Education Requirements",
+      "valueId": "2edd6374-26ec-4955-8952-ffd493a3c707",
+      "valueLabel": "N/A"
+    },
+    {
+      "fieldId": "5df900b8a7945e6c7e8163d2",
+      "fieldLabel": "International/Market Grade",
+      "valueId": "d38001a8-3dd4-4def-97cb-82930dd30cd4",
+      "valueLabel": "N/A"
+    },
+    {
+      "fieldId": "5ec6bfe8891ff45bd36fafac",
+      "fieldLabel": "Required Language(s)",
+      "valueId": "3d5f8a34-7b4c-4e14-929e-6c48b07f7c01",
+      "valueLabel": "English"
+    }
+  ],
+  "releasedDate": "2026-04-14T07:57:07.974Z",
+  "creator": {
+    "name": "",
+    "avatarUrl": ""
+  },
+  "postingUrl": "https://jobs.smartrecruiters.com/McDonaldsCorporation/744000120624847-franchisee-uk-ireland",
+  "applyUrl": "https://jobs.smartrecruiters.com/McDonaldsCorporation/744000120624847-franchisee-uk-ireland?oga=true",
+  "referralUrl": "https://jobs.smartrecruiters.com/external-referrals/company/McDonaldsCorporation/publication/9a79267a-1159-49ea-ac24-0a336fa6abdd?dcr_ci=McDonaldsCorporation",
+  "jobAd": {
+    "sections": {
+      "companyDescription": {
+        "title": "Company Description",
+        "text": "<p>McDonald’s is a global QSR chain operating almost 40K restaurants. In the UK &amp; Ireland we employ over 135,000 employees and operate over 1,400 restaurants. We’ve operated in the UK &amp; Ireland since 1974 and began franchising in 1986; our 190+ franchisees operate over 85% of our&#xa0;restaurants.</p>"
+      },
+      "jobDescription": {
+        "title": "Job Description",
+        "text": "<p>We’re always looking for hands-on, ambitious people who are ready to make a long-term commitment to our business. As a franchisee, you’ll need to make a significant up-front financial investment, which means having at least £300,000 in unencumbered funds. You’ll also be ready to lead from the front and work within our framework to give yourself the greatest chance of success.</p>"
+      },
+      "qualifications": {
+        "title": "Qualifications",
+        "text": ""
+      },
+      "additionalInformation": {
+        "title": "Additional Information",
+        "text": "<p>At McDonald's we are People from all Walks of Life...</p><p>People are at the heart of everything we do and they make the McDonalds experience. We embrace diversity and are committed to creating an inclusive culture that means people can be their best authentic self in our restaurants and offices, which helps us to better serve our customers.</p><p>We have a strong heritage of diversity and representation within our communities, which we are proud of. The diversity of our people, customers, Franchisees and suppliers give us strength.</p>"
+      }
+    }
+  },
+  "active": true,
+  "visibility": "PUBLIC",
+  "industry": {
+    "id": "restaurants",
+    "label": "Restaurants"
+  },
+  "function": {
+    "id": "general_business",
+    "label": "General Business"
+  },
+  "experienceLevel": {
+    "id": "mid_senior_level",
+    "label": "Mid-Senior Level"
+  },
+  "typeOfEmployment": {
+    "id": "permanent",
+    "label": "Full-time"
+  },
+  "language": {
+    "code": "en-GB",
+    "label": "English (UK)",
+    "labelNative": "English (UK)"
+  }
+}

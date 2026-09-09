@@ -1,0 +1,62 @@
+# CareerPilot tunables — Appendix E of docs/PROJECT_PLAN.md.
+# Every threshold, weight and model identifier lives here. None is hardcoded.
+
+scoring:
+  weights:
+    skill_coverage:        0.35
+    requirement_alignment: 0.25
+    seniority_fit:         0.15
+    semantic_similarity:   0.15
+    freshness:             0.10
+  freshness_half_life_days: 7
+  skill_fuzzy_threshold:    0.82
+
+gates:
+  max_years_shortfall:   2
+  max_posting_age_days:  45
+  require_verified_url:  true
+
+funnel:
+  retrieval_top_k: 200
+  rrf_k:           60
+  fusion_top_n:    120
+  rerank_top_n:     25
+
+models:
+  embedding: intfloat/multilingual-e5-small
+  reranker:  BAAI/bge-reranker-base
+  extraction:
+    provider: groq
+    model: llama-3.1-8b-instant
+  analysis:
+    provider: groq
+    model: llama-3.3-70b-versatile
+  fallbacks: [gemini, ollama]
+
+dedup:
+  simhash_hamming_max: 3
+  semantic_threshold:  0.94
+  title_block_tokens:  3
+  max_postings_per_url: 8
+  company_fuzzy_threshold: 0.90
+  company_review_threshold: 0.75
+
+verification:
+  reverify_after_hours: 12
+  suppress_after_hours: 48
+  per_host_min_interval_seconds: 2
+
+ingestion:
+  # Conduct rules from §5.6. Applied by every HTTP adapter.
+  user_agent: "CareerPilotBot/0.1 (+https://careerpilot.ai/bot; contact@careerpilot.ai)"
+  request_timeout_seconds: 30
+  max_retries: 3
+  default_rate_limit_rpm: 20
+  raw_payload_retention_days: 90
+  zero_row_alert_ratio: 0.20   # run vs 7-day median (§17.1 source health)
+
+queue:
+  backoff_minutes: [1, 5, 25]  # then dead-letter (§13.2)
+  claim_batch: 1
+  lock_timeout_minutes: 30
+  worker_concurrency: 4

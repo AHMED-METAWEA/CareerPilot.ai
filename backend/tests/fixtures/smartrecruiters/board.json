@@ -1,0 +1,264 @@
+{
+  "offset": 0,
+  "limit": 2,
+  "totalFound": 2,
+  "content": [
+    {
+      "id": "744000120624847",
+      "name": "Franchisee UK & Ireland",
+      "uuid": "9a79267a-1159-49ea-ac24-0a336fa6abdd",
+      "jobAdId": "b650dd99-8218-4029-9238-bc1dca033eba",
+      "defaultJobAd": true,
+      "refNumber": "REF4046W",
+      "company": {
+        "identifier": "McDonaldsCorporation",
+        "name": "McDonald's Corporation"
+      },
+      "releasedDate": "2026-04-14T07:57:07.974Z",
+      "location": {
+        "city": "London",
+        "region": "England",
+        "country": "gb",
+        "address": "11-59 High Road",
+        "postalCode": "N2 8AW",
+        "remote": false,
+        "hybrid": false,
+        "latitude": "51.58789179999999",
+        "longitude": "-0.164487",
+        "fullLocation": "London, England, United Kingdom"
+      },
+      "industry": {
+        "id": "restaurants",
+        "label": "Restaurants"
+      },
+      "department": {},
+      "function": {
+        "id": "general_business",
+        "label": "General Business"
+      },
+      "typeOfEmployment": {
+        "id": "permanent",
+        "label": "Full-time"
+      },
+      "experienceLevel": {
+        "id": "mid_senior_level",
+        "label": "Mid-Senior Level"
+      },
+      "customField": [
+        {
+          "fieldId": "5d2d0b32fef2c732566f5ea0",
+          "fieldLabel": "Brands",
+          "valueId": "ba4c59c4-ab5a-40ff-b0be-4565f618c9c3",
+          "valueLabel": "McDonalds UK & ROI (Franchisee)"
+        },
+        {
+          "fieldId": "602be917fb68c634b5e90ab2",
+          "fieldLabel": "Employee Type",
+          "valueId": "f8f27f16-3cd3-4821-9d24-fc1502f6ca7d",
+          "valueLabel": "N/A"
+        },
+        {
+          "fieldId": "5ddc3352aafaf0098ab79b21",
+          "fieldLabel": "Role Type",
+          "valueId": "4dff6e98-a43c-4ea8-86e2-50565f287743",
+          "valueLabel": "N/A"
+        },
+        {
+          "fieldId": "5d409074afc8f557e10b112c",
+          "fieldLabel": "Education Requirements",
+          "valueId": "2edd6374-26ec-4955-8952-ffd493a3c707",
+          "valueLabel": "N/A"
+        },
+        {
+          "fieldId": "5ec6bfe8891ff45bd36fafac",
+          "fieldLabel": "Required Language(s)",
+          "valueId": "3d5f8a34-7b4c-4e14-929e-6c48b07f7c01",
+          "valueLabel": "English"
+        },
+        {
+          "fieldId": "5d408f213a7b231c8f0ddd88",
+          "fieldLabel": "McD Function",
+          "valueId": "e371f7be-d0b5-423a-9e71-7ec0b582dad3",
+          "valueLabel": "Licensing & Field Services - UK&I"
+        },
+        {
+          "fieldId": "COUNTRY",
+          "fieldLabel": "Country/Region",
+          "valueId": "gb",
+          "valueLabel": "United Kingdom"
+        },
+        {
+          "fieldId": "5d408fbf2e4d0256f4f23a49",
+          "fieldLabel": "Relocation Assistance Available",
+          "valueId": "2d92d3bc-e4b5-4f2f-a85a-1a4135ec53b1",
+          "valueLabel": "No"
+        },
+        {
+          "fieldId": "5d5142c63917da1954a133c1",
+          "fieldLabel": "McDonald's Office Location",
+          "valueId": "895aa05a-250e-4e3d-8a1a-d1ac4c06cedd",
+          "valueLabel": "UK - East Finchley"
+        },
+        {
+          "fieldId": "5df900b8a7945e6c7e8163d2",
+          "fieldLabel": "International/Market Grade",
+          "valueId": "d38001a8-3dd4-4def-97cb-82930dd30cd4",
+          "valueLabel": "N/A"
+        }
+      ],
+      "visibility": "PUBLIC",
+      "ref": "https://api.smartrecruiters.com/v1/companies/McDonaldsCorporation/postings/744000120624847",
+      "language": {
+        "code": "en-GB",
+        "label": "English (UK)",
+        "labelNative": "English (UK)"
+      }
+    },
+    {
+      "id": "744000114147537",
+      "name": "Sr. Engineer, Access Governance ",
+      "uuid": "bdea78df-a3ae-4c8e-90cd-ffdd1c443ebd",
+      "jobAdId": "d09486be-0b0a-42c1-9fcf-7f20c3562e86",
+      "defaultJobAd": true,
+      "refNumber": "REF9549Q",
+      "company": {
+        "identifier": "McDonaldsCorporation",
+        "name": "McDonald's Corporation"
+      },
+      "releasedDate": "2026-03-11T20:52:54.488Z",
+      "location": {
+        "city": "Ciudad de México",
+        "region": "CDMX",
+        "country": "mx",
+        "address": "Avenida Paseo de la Reforma 296",
+        "postalCode": "06600",
+        "remote": false,
+        "hybrid": false,
+        "latitude": "19.4272147",
+        "longitude": "-99.16569009999999",
+        "fullLocation": "Ciudad de México, CDMX, Mexico"
+      },
+      "industry": {
+        "id": "restaurants",
+        "label": "Restaurants"
+      },
+      "department": {},
+      "function": {
+        "id": "accounting_auditing",
+        "label": "Accounting/Auditing"
+      },
+      "typeOfEmployment": {
+        "id": "permanent",
+        "label": "Full-time"
+      },
+      "experienceLevel": {
+        "id": "associate",
+        "label": "Associate"
+      },
+      "customField": [
+        {
+          "fieldId": "5d408e872c747155732d01cd",
+          "fieldLabel": "McD Segment",
+          "valueId": "300f2c57-125f-4349-9ae9-c28439d01bee",
+          "valueLabel": "Corporate"
+        },
+        {
+          "fieldId": "5ec6bfe8891ff45bd36fafac",
+          "fieldLabel": "Required Language(s)",
+          "valueId": "53bf1aa6-2172-4f7e-a9bc-d10ebbdaf564",
+          "valueLabel": "Bilingual - English & Spanish"
+        },
+        {
+          "fieldId": "5d52aee23b471871328e8030",
+          "fieldLabel": "Department Name",
+          "valueId": "0753",
+          "valueLabel": "IAMOPERATIONS                                      - US"
+        },
+        {
+          "fieldId": "COUNTRY",
+          "fieldLabel": "Country/Region",
+          "valueId": "mx",
+          "valueLabel": "Mexico"
+        },
+        {
+          "fieldId": "5d408fee0c495b631de98b6f",
+          "fieldLabel": "Estimated Travel",
+          "valueId": "6b72dbdc-541c-4b01-a2ea-09074a578683",
+          "valueLabel": "None"
+        },
+        {
+          "fieldId": "5d408fbf2e4d0256f4f23a49",
+          "fieldLabel": "Relocation Assistance Available",
+          "valueId": "fe52459d-080c-444f-9f8c-fbb5728d1cdc",
+          "valueLabel": "Yes"
+        },
+        {
+          "fieldId": "5ddc3a3eddd4bd0345f66017",
+          "fieldLabel": "Global Grade",
+          "valueId": "G3",
+          "valueLabel": "G3"
+        },
+        {
+          "fieldId": "5d2d0b32fef2c732566f5ea0",
+          "fieldLabel": "Brands",
+          "valueId": "default",
+          "valueLabel": "McDonald's Corporation"
+        },
+        {
+          "fieldId": "602be917fb68c634b5e90ab2",
+          "fieldLabel": "Employee Type",
+          "valueId": "b8173cc5-645e-4581-a0a0-231a344a4146",
+          "valueLabel": "Permanent"
+        },
+        {
+          "fieldId": "5ddc3352aafaf0098ab79b21",
+          "fieldLabel": "Role Type",
+          "valueId": "4aff5f81-5656-41d2-bb51-8e3c19fb8f38",
+          "valueLabel": "Full Time"
+        },
+        {
+          "fieldId": "5de706c4b51a2e69bb48bb36",
+          "fieldLabel": "Head Officer",
+          "valueId": "555d50b5-3dda-4900-b9e7-0875774c3699",
+          "valueLabel": "Brian Rice"
+        },
+        {
+          "fieldId": "5d409074afc8f557e10b112c",
+          "fieldLabel": "Education Requirements",
+          "valueId": "5e888402-a409-49b9-979f-0f93aa507008",
+          "valueLabel": "Graduate"
+        },
+        {
+          "fieldId": "5d408f213a7b231c8f0ddd88",
+          "fieldLabel": "McD Function",
+          "valueId": "7cb53b52-082d-4a29-b5ec-3fbd197e4b80",
+          "valueLabel": "Global Technology: All Other"
+        },
+        {
+          "fieldId": "5d481866ccf0977b0dc257a9",
+          "fieldLabel": "Job Level Description",
+          "valueId": "SU",
+          "valueLabel": "SU"
+        },
+        {
+          "fieldId": "5d5142c63917da1954a133c1",
+          "fieldLabel": "McDonald's Office Location",
+          "valueId": "c1f3b42f-7957-40b4-9171-1d026f7833d2",
+          "valueLabel": "Mexico"
+        },
+        {
+          "fieldId": "65294852764bab6ad177be17",
+          "fieldLabel": "Governance Request ID",
+          "valueLabel": "3993"
+        }
+      ],
+      "visibility": "PUBLIC",
+      "ref": "https://api.smartrecruiters.com/v1/companies/McDonaldsCorporation/postings/744000114147537",
+      "language": {
+        "code": "en",
+        "label": "English",
+        "labelNative": "English (US)"
+      }
+    }
+  ]
+}

@@ -1,0 +1,252 @@
+# EU and EU-remote employers.
+#
+# Every token below returned a live response with a non-zero posting count when
+# last probed (2026-09-08); that count is noted above each entry. Board tokens decay —
+# companies change ATS vendor and rename boards — so .github/workflows/boards.yml
+# re-probes this registry weekly, and `careerpilot boards validate` does it on demand.
+#
+# Terms and conduct per platform: docs/DATA_SOURCES.md
+
+# 223 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:adyen
+  config:
+    board_token: adyen
+    company_name: Adyen
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 30 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:algolia
+  config:
+    board_token: algolia
+    company_name: Algolia
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 64 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:cabify
+  config:
+    board_token: cabify
+    company_name: Cabify
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 24 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:dataiku
+  config:
+    board_token: dataiku
+    company_name: Dataiku
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 130 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:doctolib
+  config:
+    board_token: doctolib
+    company_name: Doctolib
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 55 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:getyourguide
+  config:
+    board_token: getyourguide
+    company_name: Getyourguide
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 22 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:gocardless
+  config:
+    board_token: gocardless
+    company_name: Gocardless
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 15 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:mirakl
+  config:
+    board_token: mirakl
+    company_name: Mirakl
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 32 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:raisin
+  config:
+    board_token: raisin
+    company_name: Raisin
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 20 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:seatgeek
+  config:
+    board_token: seatgeek
+    company_name: Seatgeek
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 84 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:tide
+  config:
+    board_token: tide
+    company_name: Tide
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 50 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:trustpilot
+  config:
+    board_token: trustpilot
+    company_name: Trustpilot
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 11 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:typeform
+  config:
+    board_token: typeform
+    company_name: Typeform
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 10 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:veriff
+  config:
+    board_token: veriff
+    company_name: Veriff
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 8 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:wallapop
+  config:
+    board_token: wallapop
+    company_name: Wallapop
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 239 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:wolt
+  config:
+    board_token: wolt
+    company_name: Wolt
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 30 postings at last probe
+- adapter: lever
+  name: lever:contentsquare
+  config:
+    company: contentsquare
+    company_name: Contentsquare
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 1 postings at last probe
+- adapter: lever
+  name: lever:ledger
+  config:
+    company: ledger
+    company_name: Ledger
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 32 postings at last probe
+- adapter: lever
+  name: lever:malt
+  config:
+    company: malt
+    company_name: Malt
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 121 postings at last probe
+- adapter: lever
+  name: lever:pigment
+  config:
+    company: pigment
+    company_name: Pigment
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 45 postings at last probe
+- adapter: lever
+  name: lever:qonto
+  config:
+    company: qonto
+    company_name: Qonto
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 27 postings at last probe
+- adapter: lever
+  name: lever:swile
+  config:
+    company: swile
+    company_name: Swile
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 6 postings at last probe
+- adapter: lever
+  name: lever:younited
+  config:
+    company: younited
+    company_name: Younited
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 2 postings at last probe
+- adapter: recruitee
+  name: recruitee:codaisseur
+  config:
+    company: codaisseur
+    company_name: Codaisseur
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 17 postings at last probe
+- adapter: recruitee
+  name: recruitee:greenchoice
+  config:
+    company: greenchoice
+    company_name: Greenchoice
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 29 postings at last probe
+- adapter: recruitee
+  name: recruitee:lansweeper
+  config:
+    company: lansweeper
+    company_name: Lansweeper
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 1 postings at last probe
+- adapter: recruitee
+  name: recruitee:robovision
+  config:
+    company: robovision
+    company_name: Robovision
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1

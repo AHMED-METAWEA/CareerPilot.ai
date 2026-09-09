@@ -1,0 +1,999 @@
+# Global and remote-first employers.
+#
+# Every token below returned a live response with a non-zero posting count when
+# last probed (2026-09-08); that count is noted above each entry. Board tokens decay —
+# companies change ATS vendor and rename boards — so .github/workflows/boards.yml
+# re-probes this registry weekly, and `careerpilot boards validate` does it on demand.
+#
+# Terms and conduct per platform: docs/DATA_SOURCES.md
+
+# 12 postings at last probe
+- adapter: ashby
+  name: ashby:airbyte
+  config:
+    org: airbyte
+    company_name: Airbyte
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 21 postings at last probe
+- adapter: ashby
+  name: ashby:astronomer
+  config:
+    org: astronomer
+    company_name: Astronomer
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 48 postings at last probe
+- adapter: ashby
+  name: ashby:attio
+  config:
+    org: attio
+    company_name: Attio
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 3 postings at last probe
+- adapter: ashby
+  name: ashby:axiom
+  config:
+    org: axiom
+    company_name: Axiom
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 88 postings at last probe
+- adapter: ashby
+  name: ashby:baseten
+  config:
+    org: baseten
+    company_name: Baseten
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 26 postings at last probe
+- adapter: ashby
+  name: ashby:braintrust
+  config:
+    org: braintrust
+    company_name: Braintrust
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 9 postings at last probe
+- adapter: ashby
+  name: ashby:browserbase
+  config:
+    org: browserbase
+    company_name: Browserbase
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 1 postings at last probe
+- adapter: ashby
+  name: ashby:clerk
+  config:
+    org: clerk
+    company_name: Clerk
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 181 postings at last probe
+- adapter: ashby
+  name: ashby:clickhouse
+  config:
+    org: clickhouse
+    company_name: Clickhouse
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 144 postings at last probe
+- adapter: ashby
+  name: ashby:cohere
+  config:
+    org: cohere
+    company_name: Cohere
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 124 postings at last probe
+- adapter: ashby
+  name: ashby:cursor
+  config:
+    org: cursor
+    company_name: Cursor
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 90 postings at last probe
+- adapter: ashby
+  name: ashby:deepgram
+  config:
+    org: deepgram
+    company_name: Deepgram
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 1 postings at last probe
+- adapter: ashby
+  name: ashby:depot
+  config:
+    org: depot
+    company_name: Depot
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 249 postings at last probe
+- adapter: ashby
+  name: ashby:elevenlabs
+  config:
+    org: elevenlabs
+    company_name: ElevenLabs
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 68 postings at last probe
+- adapter: ashby
+  name: ashby:fireworks
+  config:
+    org: fireworks
+    company_name: Fireworks
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 339 postings at last probe
+- adapter: ashby
+  name: ashby:harvey
+  config:
+    org: harvey
+    company_name: Harvey
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 31 postings at last probe
+- adapter: ashby
+  name: ashby:hex
+  config:
+    org: hex
+    company_name: Hex
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 1 postings at last probe
+- adapter: ashby
+  name: ashby:hightouch
+  config:
+    org: hightouch
+    company_name: Hightouch
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 1 postings at last probe
+- adapter: ashby
+  name: ashby:inngest
+  config:
+    org: inngest
+    company_name: Inngest
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 3 postings at last probe
+- adapter: ashby
+  name: ashby:knock
+  config:
+    org: knock
+    company_name: Knock
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 106 postings at last probe
+- adapter: ashby
+  name: ashby:langchain
+  config:
+    org: langchain
+    company_name: Langchain
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 29 postings at last probe
+- adapter: ashby
+  name: ashby:linear
+  config:
+    org: linear
+    company_name: Linear
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 5 postings at last probe
+- adapter: ashby
+  name: ashby:materialize
+  config:
+    org: materialize
+    company_name: Materialize
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 30 postings at last probe
+- adapter: ashby
+  name: ashby:modal
+  config:
+    org: modal
+    company_name: Modal
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 6 postings at last probe
+- adapter: ashby
+  name: ashby:neon
+  config:
+    org: neon
+    company_name: Neon
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 130 postings at last probe
+- adapter: ashby
+  name: ashby:notion
+  config:
+    org: notion
+    company_name: Notion
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 22 postings at last probe
+- adapter: ashby
+  name: ashby:omni
+  config:
+    org: omni
+    company_name: Omni
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 778 postings at last probe
+- adapter: ashby
+  name: ashby:openai
+  config:
+    org: openai
+    company_name: OpenAI
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 112 postings at last probe
+- adapter: ashby
+  name: ashby:perplexity
+  config:
+    org: perplexity
+    company_name: Perplexity AI
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 6 postings at last probe
+- adapter: ashby
+  name: ashby:pinecone
+  config:
+    org: pinecone
+    company_name: Pinecone
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 2 postings at last probe
+- adapter: ashby
+  name: ashby:polar
+  config:
+    org: polar
+    company_name: Polar
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 9 postings at last probe
+- adapter: ashby
+  name: ashby:posthog
+  config:
+    org: posthog
+    company_name: PostHog
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 8 postings at last probe
+- adapter: ashby
+  name: ashby:prefect
+  config:
+    org: prefect
+    company_name: Prefect
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 8 postings at last probe
+- adapter: ashby
+  name: ashby:railway
+  config:
+    org: railway
+    company_name: Railway
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 141 postings at last probe
+- adapter: ashby
+  name: ashby:ramp
+  config:
+    org: ramp
+    company_name: Ramp
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 35 postings at last probe
+- adapter: ashby
+  name: ashby:render
+  config:
+    org: render
+    company_name: Render
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 71 postings at last probe
+- adapter: ashby
+  name: ashby:replit
+  config:
+    org: replit
+    company_name: Replit
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 11 postings at last probe
+- adapter: ashby
+  name: ashby:resend
+  config:
+    org: resend
+    company_name: Resend
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 39 postings at last probe
+- adapter: ashby
+  name: ashby:sardine
+  config:
+    org: sardine
+    company_name: Sardine
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 60 postings at last probe
+- adapter: ashby
+  name: ashby:supabase
+  config:
+    org: supabase
+    company_name: Supabase
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 7 postings at last probe
+- adapter: ashby
+  name: ashby:turbopuffer
+  config:
+    org: turbopuffer
+    company_name: Turbopuffer
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 111 postings at last probe
+- adapter: ashby
+  name: ashby:vanta
+  config:
+    org: vanta
+    company_name: Vanta
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 19 postings at last probe
+- adapter: ashby
+  name: ashby:warp
+  config:
+    org: warp
+    company_name: Warp
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 2 postings at last probe
+- adapter: ashby
+  name: ashby:weaviate
+  config:
+    org: weaviate
+    company_name: Weaviate
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 2 postings at last probe
+- adapter: ashby
+  name: ashby:zed
+  config:
+    org: zed
+    company_name: Zed
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 199 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:affirm
+  config:
+    board_token: affirm
+    company_name: Affirm
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 172 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:airbnb
+  config:
+    board_token: airbnb
+    company_name: Airbnb
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 16 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:airtable
+  config:
+    board_token: airtable
+    company_name: Airtable
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 38 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:amplitude
+  config:
+    board_token: amplitude
+    company_name: Amplitude
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 587 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:anthropic
+  config:
+    board_token: anthropic
+    company_name: Anthropic
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 113 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:asana
+  config:
+    board_token: asana
+    company_name: Asana
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 37 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:attentive
+  config:
+    board_token: attentive
+    company_name: Attentive
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 24 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:bitpanda
+  config:
+    board_token: bitpanda
+    company_name: Bitpanda
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 283 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:braze
+  config:
+    board_token: braze
+    company_name: Braze
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 278 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:brex
+  config:
+    board_token: brex
+    company_name: Brex
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 45 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:checkr
+  config:
+    board_token: checkr
+    company_name: Checkr
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 65 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:chime
+  config:
+    board_token: chime
+    company_name: Chime
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 7 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:circleci
+  config:
+    board_token: circleci
+    company_name: Circleci
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 5 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:cleo
+  config:
+    board_token: cleo
+    company_name: Cleo
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 331 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:cloudflare
+  config:
+    board_token: cloudflare
+    company_name: Cloudflare
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 24 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:cockroachlabs
+  config:
+    board_token: cockroachlabs
+    company_name: Cockroach Labs
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 192 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:coinbase
+  config:
+    board_token: coinbase
+    company_name: Coinbase
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 7 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:consensys
+  config:
+    board_token: consensys
+    company_name: Consensys
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 59 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:cribl
+  config:
+    board_token: cribl
+    company_name: Cribl
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 869 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:databricks
+  config:
+    board_token: databricks
+    company_name: Databricks
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 451 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:datadog
+  config:
+    board_token: datadog
+    company_name: Datadog
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 48 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:discord
+  config:
+    board_token: discord
+    company_name: Discord
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 45 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:dropbox
+  config:
+    board_token: dropbox
+    company_name: Dropbox
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 357 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:elastic
+  config:
+    board_token: elastic
+    company_name: Elastic
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 44 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:fastly
+  config:
+    board_token: fastly
+    company_name: Fastly
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 158 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:figma
+  config:
+    board_token: figma
+    company_name: Figma
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 175 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:flexport
+  config:
+    board_token: flexport
+    company_name: Flexport
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 8 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:form3
+  config:
+    board_token: form3
+    company_name: Form3
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 35 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:gemini
+  config:
+    board_token: gemini
+    company_name: Gemini
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 229 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:gitlab
+  config:
+    board_token: gitlab
+    company_name: GitLab
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 129 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:grafanalabs
+  config:
+    board_token: grafanalabs
+    company_name: Grafana Labs
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 92 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:gusto
+  config:
+    board_token: gusto
+    company_name: Gusto
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 109 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:instacart
+  config:
+    board_token: instacart
+    company_name: Instacart
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 137 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:klaviyo
+  config:
+    board_token: klaviyo
+    company_name: Klaviyo
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 48 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:launchdarkly
+  config:
+    board_token: launchdarkly
+    company_name: Launchdarkly
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 85 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:mixpanel
+  config:
+    board_token: mixpanel
+    company_name: Mixpanel
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 406 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:mongodb
+  config:
+    board_token: mongodb
+    company_name: MongoDB
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 63 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:monzo
+  config:
+    board_token: monzo
+    company_name: Monzo
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 70 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:n26
+  config:
+    board_token: n26
+    company_name: N26
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 1 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:netlify
+  config:
+    board_token: netlify
+    company_name: Netlify
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 52 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:newrelic
+  config:
+    board_token: newrelic
+    company_name: Newrelic
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 6 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:ovoenergy
+  config:
+    board_token: ovoenergy
+    company_name: Ovoenergy
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 43 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:pagerduty
+  config:
+    board_token: pagerduty
+    company_name: Pagerduty
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 13 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:planetscale
+  config:
+    board_token: planetscale
+    company_name: Planetscale
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 64 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:postman
+  config:
+    board_token: postman
+    company_name: Postman
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 146 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:reddit
+  config:
+    board_token: reddit
+    company_name: Reddit
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 127 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:robinhood
+  config:
+    board_token: robinhood
+    company_name: Robinhood
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 250 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:samsara
+  config:
+    board_token: samsara
+    company_name: Samsara
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 212 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:scaleai
+  config:
+    board_token: scaleai
+    company_name: Scale AI
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 27 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:squarespace
+  config:
+    board_token: squarespace
+    company_name: Squarespace
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 618 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:stripe
+  config:
+    board_token: stripe
+    company_name: Stripe
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 15 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:sumologic
+  config:
+    board_token: sumologic
+    company_name: Sumologic
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 2 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:truelayer
+  config:
+    board_token: truelayer
+    company_name: Truelayer
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 151 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:twilio
+  config:
+    board_token: twilio
+    company_name: Twilio
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 89 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:vercel
+  config:
+    board_token: vercel
+    company_name: Vercel
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 22 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:wise
+  config:
+    board_token: wise
+    company_name: Wise
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 74 postings at last probe
+- adapter: lever
+  name: lever:matchgroup
+  config:
+    company: matchgroup
+    company_name: Match Group
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 436 postings at last probe
+- adapter: lever
+  name: lever:shieldai
+  config:
+    company: shieldai
+    company_name: Shield AI
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 75 postings at last probe
+- adapter: lever
+  name: lever:spotify
+  config:
+    company: spotify
+    company_name: Spotify
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 14 postings at last probe
+- adapter: recruitee
+  name: recruitee:bunq
+  config:
+    company: bunq
+    company_name: bunq
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 12 postings at last probe
+- adapter: recruitee
+  name: recruitee:channable
+  config:
+    company: channable
+    company_name: Channable
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 440 postings at last probe
+- adapter: smartrecruiters
+  name: smartrecruiters:AveryDennison
+  config:
+    company_id: AveryDennison
+    company_name: Averydennison
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 4840 postings at last probe
+- adapter: smartrecruiters
+  name: smartrecruiters:BoschGroup
+  config:
+    company_id: BoschGroup
+    company_name: Boschgroup
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 4 postings at last probe
+- adapter: smartrecruiters
+  name: smartrecruiters:McDonaldsCorporation
+  config:
+    company_id: McDonaldsCorporation
+    company_name: Mcdonaldscorporation
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 1 postings at last probe
+- adapter: smartrecruiters
+  name: smartrecruiters:SmartRecruiters
+  config:
+    company_id: SmartRecruiters
+    company_name: Smartrecruiters
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
