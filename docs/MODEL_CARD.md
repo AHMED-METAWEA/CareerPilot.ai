@@ -63,6 +63,26 @@ the source document; fields failing verification are discarded rather than
 surfaced. Skills must resolve to a closed taxonomy. `insufficient_evidence` is
 a valid output for every extraction task, and abstention rate is monitored.
 
+## Generated text (Phase 4)
+
+Cover letters and bullet rewrites are produced from a structured fact bundle and
+then checked token by token against the CV by the anti-invention diff (§10.3).
+
+| Measure | Result |
+|---|---|
+| Adversarial cases blocked | 50 / 50 |
+| Honest statements passed | 15 / 15 |
+| Attempts before refusal | 1 generation, 1 repair |
+
+The adversarial set lives in `backend/tests/unit/test_anti_invention.py` and is
+part of the suite, so the number above is re-measured on every run rather than
+recorded once. The honest set is measured alongside it deliberately: a guard
+that blocks everything is not a guard, it is an off switch.
+
+Both figures are for the mechanism, not for a model. The diff does not depend on
+which provider produced the text, and text that fails it is never shown — so the
+failure mode is a refusal, not a plausible fabrication.
+
 ## Data
 
 Job postings from employer ATS public APIs (see

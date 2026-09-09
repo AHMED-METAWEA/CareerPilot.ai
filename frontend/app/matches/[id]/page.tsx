@@ -57,6 +57,12 @@ export default async function MatchDetailPage({
               Not for me
             </button>
           </form>
+          <Link
+            href={`/matches/${match.match_id}/prepare`}
+            className="rounded-md border border-[var(--color-line)] px-3 py-1.5 text-sm"
+          >
+            Prepare
+          </Link>
           {/* The apply link is the employer's own, opened in a new tab. We do
               not submit anything, and we do not wrap or shorten the URL. */}
           <a

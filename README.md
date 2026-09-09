@@ -201,6 +201,29 @@ them).
   nothing to say. No email provider is configured, so nothing is delivered yet —
   the §16.4 checkpoint for outbound email has not been met.
 
+### Phase 4 — writing that cannot invent
+
+- **The anti-invention diff** (§10.3) is the phase's centrepiece: generated text
+  is tokenised and every skill, employer, credential, date and figure in it is
+  checked against the CV. It blocks **50 of 50** adversarial cases and passes
+  **15 of 15** honest ones. Four design points came out of that set the hard
+  way, and each is a comment in the code: only claim-bearing tokens are checked;
+  sources are typed (the posting is what the employer *wants*, not evidence
+  about the candidate); figures are compared as value *and* unit, so "40%" is
+  not supported by "forty minutes"; and a disclaimed mention ("Kubernetes, which
+  I have not used") is a gap honestly named, not a claim.
+- **Cover letters and bullet rewrites** are generated from a structured fact
+  bundle (§10.4) and then put through that diff. One generation, one repair that
+  names what was invented, then a refusal — and a refusal shows the candidate
+  the specific failed claims rather than a draft with a warning above it. A
+  draft on screen is a draft that gets sent.
+- **Only the candidate's own bullets can be rewritten.** A free-text box would
+  turn the endpoint into a laundering route for a claim the CV never made.
+- **Gap analysis and interview preparation need no model at all**, so they work
+  with no inference provider configured and read the same every time. The
+  questions come from the requirements this posting actually stated, each shown
+  with the requirement it came from and the candidate's own evidence for it.
+
 ## Development
 
 ```bash
