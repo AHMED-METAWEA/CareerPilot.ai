@@ -5,9 +5,11 @@ from __future__ import annotations
 import secrets
 import uuid
 from collections.abc import Iterator
+from dataclasses import dataclass
 from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -28,36 +30,59 @@ def get_session() -> Iterator[Session]:
         session.close()
 
 
-def current_user_id(
-    x_user_id: Annotated[uuid.UUID | None, Header()] = None,
-    session: Session = Depends(get_session),
-) -> uuid.UUID:
-    """Resolve the acting user.
+@dataclass(frozen=True, slots=True)
+class CurrentUser:
+    user_id: uuid.UUID
+    email: str
 
-    Phase 1 has no authentication: the plan puts multi-user auth in Phase 3
-    (§18), and inventing a half-authentication now would be worse than having
-    none — it would look like a security boundary without being one. The header
-    is validated against the users table so a request cannot act as a user that
-    does not exist, and `require_real_auth` refuses to serve this path in
-    production at all.
+
+_bearer = HTTPBearer(auto_error=False)
+
+
+def current_user(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)] = None,
+    session: Session = Depends(get_session),
+) -> CurrentUser:
+    """The authenticated caller (§12.1, §16.2).
+
+    Every subsequent query is scoped by this id at the repository layer rather
+    than the route layer (§16.2), so a handler that forgets to filter cannot
+    leak another user's data.
     """
-    settings = get_settings()
-    if settings.careerpilot_env == "production":
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Authentication arrives in Phase 3; these endpoints are not production-ready",
-        )
-    if x_user_id is None:
+    from app.services.auth import AuthError, AuthService
+
+    if credentials is None or not credentials.credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="X-User-Id header is required until authentication ships (Phase 3)",
+            detail="Authorization: Bearer <access token> is required",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-    exists = session.execute(
-        text("SELECT 1 FROM users WHERE id = :id AND deleted_at IS NULL"), {"id": x_user_id}
+
+    service = AuthService(session, secret=get_settings().admin_token)
+    try:
+        user = service.verify_access_token(credentials.credentials)
+    except AuthError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(exc),
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
+
+    # A token outlives a deletion request by up to fifteen minutes; the account
+    # check closes that window.
+    active = session.execute(
+        text("SELECT 1 FROM users WHERE id = :id AND deleted_at IS NULL"),
+        {"id": user.user_id},
     ).first()
-    if not exists:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unknown user")
-    return x_user_id
+    if not active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Account not active")
+
+    return CurrentUser(user_id=user.user_id, email=user.email)
+
+
+def current_user_id(user: Annotated[CurrentUser, Depends(current_user)]) -> uuid.UUID:
+    """Convenience for handlers that only need the id."""
+    return user.user_id
 
 
 def require_admin(x_admin_token: str | None = Header(default=None)) -> None:

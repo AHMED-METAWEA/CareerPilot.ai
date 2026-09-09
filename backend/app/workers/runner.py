@@ -194,6 +194,17 @@ class Worker:
             minute=0,
             id="match_users",
         )
+        # 07:00 UTC. Per-user local time needs a timezone on the user record;
+        # until then a single hour is honest about what it is.
+        self._scheduler.add_job(
+            self._scheduled(
+                lambda session: enqueue(session, TaskType.DIGEST, dedup_key="digest", priority=3)
+            ),
+            "cron",
+            hour=7,
+            minute=0,
+            id="digest",
+        )
         self._scheduler.add_job(
             self._scheduled(
                 lambda session: enqueue(
@@ -204,6 +215,18 @@ class Worker:
             hour=3,
             minute=0,
             id="expire_postings",
+        )
+        # Erasure has a deadline, so its job runs daily rather than weekly.
+        self._scheduler.add_job(
+            self._scheduled(
+                lambda session: enqueue(
+                    session, TaskType.PURGE_DELETED, dedup_key="purge_deleted", priority=7
+                )
+            ),
+            "cron",
+            hour=3,
+            minute=30,
+            id="purge_deleted",
         )
         self._scheduler.add_job(
             self._scheduled(

@@ -22,10 +22,10 @@ references throughout the code point at it.
 |---|---|---|
 | **0 — Data spine** | Schema, six ATS adapters, normalisation, five-stage dedup, company resolution, discovery worker | **built** — 141 validated boards |
 
-378 tests, 88% coverage. `make check` runs everything CI does.
+431 tests, 86% coverage. `make check` runs everything CI does.
 | **1 — Matching core** | CV ingestion, grounded profile extraction, gates, hybrid retrieval, rerank, decomposed scoring, apply-URL verification | **built** |
 | **2 — Evaluation** | Metrics, ablation runner, negative controls, CI regression gate | **built** — golden set is human work, see below |
-| 3 — Product | Multi-user auth, Next.js UI, digest, export/delete (URL verification landed early — Phase 1's gates need it) | not started |
+| **3 — Product (backend)** | JWT auth with rotating refresh tokens, engagement tracking, duplicate-application guard, digest, export and erasure | **built** — Next.js UI still to come |
 | 4–6 | Candidate tooling · bilingual pipeline · personalisation | not started |
 
 ### Phase 0 against its exit criteria (§18)
@@ -168,6 +168,27 @@ semantic model: the fallback embedder relates documents only through shared
 words. The thresholds are not lowered to make the build green
 ([EVALUATION.md](docs/EVALUATION.md) records the numbers and what would settle
 them).
+
+### Phase 3 — what the product now promises, and keeps
+
+- **Authentication** (§16.2): Argon2id, 15-minute access tokens, 30-day refresh
+  tokens that rotate and are single-use. Reusing a rotated token revokes the
+  whole family — reuse means a copy exists, and one of the two holders is not
+  the user. Login is not a membership oracle: an unknown email and a wrong
+  password return the same answer in about the same time.
+- **The duplicate-application guard** (§11.6) works across boards, because it
+  checks the job *group* rather than the posting. Applying twice to the same
+  role through an aggregator's copy is exactly the reputational damage the
+  product exists to avoid — and it is a warning, not a prohibition.
+- **Export and erasure** (§12.5): a readable JSON export of everything held, and
+  a deletion that destroys the CV text and every session immediately, then drops
+  the rest after 30 days. The audit row outlives the account, which is what
+  makes a deletion demonstrable afterwards.
+- **The digest** (§11.7): five matches, one reason each, drawn from the stored
+  explanation so it says what the match detail says. Consent is checked at send
+  time, nothing already sent is sent again, and nothing goes out when there is
+  nothing to say. No email provider is configured, so nothing is delivered yet —
+  the §16.4 checkpoint for outbound email has not been met.
 
 ## Development
 

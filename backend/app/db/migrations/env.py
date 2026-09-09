@@ -43,6 +43,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         include_object=include_object,
         compare_type=True,
+        compare_server_default=True,
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -60,6 +61,9 @@ def run_migrations_online() -> None:
             target_metadata=target_metadata,
             include_object=include_object,
             compare_type=True,
+            # Server defaults are part of the schema: a column that silently
+            # keeps `now()` after the model says `clock_timestamp()` is drift.
+            compare_server_default=True,
         )
         with context.begin_transaction():
             context.run_migrations()

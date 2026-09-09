@@ -6,8 +6,10 @@ from app.workers.tasks.discover import (  # noqa: F401
     run_expire_postings,
     run_fetch_details,
     run_prune_raw,
+    run_purge_deleted,
 )
 from app.workers.tasks.matching import (  # noqa: F401
+    run_digest,
     run_embed,
     run_match_users,
     run_verify_urls,

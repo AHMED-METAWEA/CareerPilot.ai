@@ -76,6 +76,31 @@ class Consent(Base):
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class RefreshToken(Base):
+    """Rotating refresh tokens (§16.2).
+
+    Stored hashed, single-use, and grouped into a `family` so that reuse of a
+    rotated token can revoke the whole chain rather than one token — reuse means
+    a copy exists, and one of the two holders is not the user.
+    """
+
+    __tablename__ = "refresh_tokens"
+    __table_args__ = (
+        Index("ix_refresh_tokens_user", "user_id"),
+        Index("ix_refresh_tokens_family", "family"),
+    )
+
+    id: Mapped[uuid.UUID] = _pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    family: Mapped[str] = mapped_column(Text, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = _now()
+
+
 class AuditLog(Base):
     """Every CV access, export and deletion (§16.2)."""
 
@@ -576,6 +601,7 @@ class MatchEvidence(Base):
 
 class UserJobEvent(Base):
     __tablename__ = "user_job_events"
+    __table_args__ = (Index("ix_user_job_events_user_posting", "user_id", "posting_id"),)
 
     id: Mapped[uuid.UUID] = _pk()
     user_id: Mapped[uuid.UUID] = mapped_column(
@@ -585,7 +611,40 @@ class UserJobEvent(Base):
         UUID(as_uuid=True), ForeignKey("job_postings.id", ondelete="CASCADE"), nullable=False
     )
     event: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = _now()
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.clock_timestamp()
+    )
+    """`clock_timestamp()`, not `now()`.
+
+    Postgres' `now()` is the *transaction* start time, so a save and a dismiss
+    recorded in one request share a timestamp and their order is undefined —
+    which made "currently saved" return dismissed postings. An event log needs
+    the instant the event happened."""
+
+
+class DigestSend(Base):
+    """One posting sent to one user in a digest (§11.7).
+
+    The uniqueness constraint is what makes "new" mean new: a digest that
+    repeats yesterday's list trains people to stop opening it.
+    """
+
+    __tablename__ = "digest_sends"
+    __table_args__ = (
+        UniqueConstraint("user_id", "posting_id"),
+        Index("ix_digest_sends_user_sent", "user_id", "sent_at"),
+    )
+
+    id: Mapped[uuid.UUID] = _pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    posting_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("job_postings.id", ondelete="CASCADE"), nullable=False
+    )
+    match_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    message_id: Mapped[str | None] = mapped_column(Text)
+    sent_at: Mapped[datetime] = _now()
 
 
 class Application(Base):

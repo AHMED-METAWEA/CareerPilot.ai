@@ -159,6 +159,19 @@ def run_expire_postings(ctx: TaskContext, payload: dict[str, Any]) -> dict[str, 
     return {"closed": closed}
 
 
+@handler(TaskType.PURGE_DELETED)
+def run_purge_deleted(ctx: TaskContext, payload: dict[str, Any]) -> dict[str, Any]:
+    """Drop accounts whose deletion retention window has passed (§6.4, §12.5).
+
+    The `audit_log` row survives the account: it records that a deletion
+    happened and when, which is what makes the deletion demonstrable afterwards.
+    """
+    from app.services.account import AccountService
+
+    deleted = AccountService(ctx.session).hard_delete_expired()
+    return {"accounts_deleted": deleted}
+
+
 @handler(TaskType.PRUNE_RAW)
 def run_prune_raw(ctx: TaskContext, payload: dict[str, Any]) -> dict[str, Any]:
     """Maintain the rolling raw_payloads window (§6.4).

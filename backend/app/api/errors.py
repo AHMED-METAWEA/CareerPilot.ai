@@ -28,6 +28,7 @@ def problem(
     *,
     detail: str | None = None,
     type_: str = "about:blank",
+    headers: dict[str, str] | None = None,
     **extra: Any,
 ) -> JSONResponse:
     body: dict[str, Any] = {"type": type_, "title": title, "status": status}
@@ -37,11 +38,20 @@ def problem(
     if request_id:
         body["request_id"] = request_id
     body.update(extra)
+
+    # Headers the exception carried are part of the response's meaning, not
+    # decoration: RFC 7235 requires `WWW-Authenticate` on a 401, and dropping it
+    # while rendering a problem document turns a well-formed challenge into an
+    # unexplained refusal.
+    response_headers = dict(headers or {})
+    if request_id:
+        response_headers["X-Request-ID"] = request_id
+
     return JSONResponse(
         status_code=status,
         content=body,
         media_type="application/problem+json",
-        headers={"X-Request-ID": request_id} if request_id else None,
+        headers=response_headers or None,
     )
 
 
@@ -51,6 +61,7 @@ def install_error_handlers(app: FastAPI) -> None:
         # A structured detail becomes problem-document extension members rather
         # than a stringified dict: RFC 7807 exists so an error can carry data a
         # client acts on, and a parseability report is exactly that.
+        exception_headers = getattr(exc, "headers", None) or {}
         if isinstance(exc.detail, dict):
             detail = dict(exc.detail)
             title = str(detail.pop("message", None) or "Request failed")
@@ -58,12 +69,14 @@ def install_error_handlers(app: FastAPI) -> None:
                 exc.status_code,
                 title=title,
                 type_=f"{PROBLEM_BASE}/http-{exc.status_code}",
+                headers=exception_headers,
                 **detail,
             )
         return problem(
             exc.status_code,
             title=str(exc.detail),
             type_=f"{PROBLEM_BASE}/http-{exc.status_code}",
+            headers=exception_headers,
         )
 
     @app.exception_handler(RequestValidationError)

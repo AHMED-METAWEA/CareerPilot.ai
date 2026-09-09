@@ -17,7 +17,7 @@ from fastapi import FastAPI, Request, Response
 from sqlalchemy import text
 
 from app.api.errors import install_error_handlers
-from app.api.v1 import admin, matches, profile
+from app.api.v1 import account, admin, applications, auth, matches, profile
 from app.config import get_settings
 from app.db.session import get_engine
 from app.logging import configure_logging, request_id_var
@@ -43,9 +43,12 @@ app = FastAPI(
 )
 
 install_error_handlers(app)
+app.include_router(auth.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(profile.router, prefix="/api/v1")
 app.include_router(matches.router, prefix="/api/v1")
+app.include_router(applications.router, prefix="/api/v1")
+app.include_router(account.router, prefix="/api/v1")
 
 
 @app.middleware("http")

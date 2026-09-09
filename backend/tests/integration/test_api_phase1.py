@@ -25,14 +25,33 @@ def client() -> TestClient:
 
 
 @pytest.fixture
-def user_id(db_session: Session) -> uuid.UUID:
-    """Committed, because the API opens its own session and must see this user."""
-    identifier = db_session.execute(
-        sa.text("INSERT INTO users (email, password_hash) VALUES (:e, 'x') RETURNING id"),
-        {"e": f"{uuid.uuid4().hex[:8]}@example.com"},
-    ).scalar_one()
-    db_session.commit()
-    return uuid.UUID(str(identifier))
+def account(client: TestClient, db_session: Session) -> tuple[uuid.UUID, dict[str, str]]:
+    """A registered user and the Authorization header that authenticates them.
+
+    Registration goes through the real endpoint rather than an INSERT: the
+    fixture then exercises the same path a user takes, including consent.
+    """
+    response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": f"{uuid.uuid4().hex[:8]}@example.com",
+            "password": "a-long-enough-passphrase",
+            "accept_processing": True,
+        },
+    )
+    assert response.status_code == 201, response.text
+    body = response.json()
+    return uuid.UUID(body["user_id"]), {"Authorization": f"Bearer {body['access_token']}"}
+
+
+@pytest.fixture
+def user_id(account: tuple[uuid.UUID, dict[str, str]]) -> uuid.UUID:
+    return account[0]
+
+
+@pytest.fixture
+def auth(account: tuple[uuid.UUID, dict[str, str]]) -> dict[str, str]:
+    return account[1]
 
 
 def cv_upload() -> tuple[str, bytes, str]:
@@ -69,19 +88,17 @@ def test_upload_requires_a_user(client: TestClient) -> None:
     assert response.headers["content-type"].startswith("application/problem+json")
 
 
-def test_unknown_user_is_rejected(client: TestClient) -> None:
+def test_a_forged_token_is_rejected(client: TestClient) -> None:
     response = client.post(
-        "/api/v1/cv", files={"file": cv_upload()}, headers={"X-User-Id": str(uuid.uuid4())}
+        "/api/v1/cv", files={"file": cv_upload()}, headers={"Authorization": "Bearer not-a-token"}
     )
     assert response.status_code == 401
 
 
 def test_upload_returns_the_parseability_report(
-    client: TestClient, user_id: uuid.UUID, db_session: Session
+    client: TestClient, auth: dict[str, str], db_session: Session
 ) -> None:
-    response = client.post(
-        "/api/v1/cv", files={"file": cv_upload()}, headers={"X-User-Id": str(user_id)}
-    )
+    response = client.post("/api/v1/cv", files={"file": cv_upload()}, headers=auth)
     assert response.status_code == 201, response.text
     body = response.json()
     assert body["parse_quality"] > 0.6
@@ -89,17 +106,17 @@ def test_upload_returns_the_parseability_report(
     assert "experience" in body["parseability"]["sections_found"]
 
 
-def test_unsupported_type_is_refused(client: TestClient, user_id: uuid.UUID) -> None:
+def test_unsupported_type_is_refused(client: TestClient, auth: dict[str, str]) -> None:
     response = client.post(
         "/api/v1/cv",
         files={"file": ("cv.exe", b"MZ\x00binary", "application/x-msdownload")},
-        headers={"X-User-Id": str(user_id)},
+        headers=auth,
     )
     assert response.status_code == 415
 
 
 def test_unreadable_cv_returns_the_report_not_a_bare_error(
-    client: TestClient, user_id: uuid.UUID
+    client: TestClient, auth: dict[str, str]
 ) -> None:
     """A candidate whose CV cannot be read deserves something to act on."""
     document = DocxDocument()
@@ -110,7 +127,7 @@ def test_unreadable_cv_returns_the_report_not_a_bare_error(
     response = client.post(
         "/api/v1/cv",
         files={"file": ("cv.docx", buffer.getvalue(), DOCX_MIME)},
-        headers={"X-User-Id": str(user_id)},
+        headers=auth,
     )
     assert response.status_code == 422
     body = response.json()
@@ -121,13 +138,13 @@ def test_unreadable_cv_returns_the_report_not_a_bare_error(
     assert all(finding["suggestion"] for finding in body["parseability"]["findings"])
 
 
-def test_profile_is_404_before_a_cv_is_processed(client: TestClient, user_id: uuid.UUID) -> None:
-    response = client.get("/api/v1/profile", headers={"X-User-Id": str(user_id)})
+def test_profile_is_404_before_a_cv_is_processed(client: TestClient, auth: dict[str, str]) -> None:
+    response = client.get("/api/v1/profile", headers=auth)
     assert response.status_code == 404
 
 
 def test_profile_exposes_evidence_spans(
-    client: TestClient, db_session: Session, user_id: uuid.UUID
+    client: TestClient, db_session: Session, user_id: uuid.UUID, auth: dict[str, str]
 ) -> None:
     """§12.2: every field carries the offsets that justify it."""
     document_id = db_session.execute(
@@ -167,19 +184,19 @@ def test_profile_exposes_evidence_spans(
     )
     db_session.commit()
 
-    body = client.get("/api/v1/profile", headers={"X-User-Id": str(user_id)}).json()
+    body = client.get("/api/v1/profile", headers=auth).json()
     assert body["years_experience"] == 5.0
     assert body["skills"][0]["name"] == "Python"
     assert body["skills"][0]["evidence_span"] == [20, 26]
 
 
-def test_matches_refresh_needs_a_profile(client: TestClient, user_id: uuid.UUID) -> None:
-    response = client.post("/api/v1/matches/refresh", headers={"X-User-Id": str(user_id)})
+def test_matches_refresh_needs_a_profile(client: TestClient, auth: dict[str, str]) -> None:
+    response = client.post("/api/v1/matches/refresh", headers=auth)
     assert response.status_code == 404
 
 
 def test_match_list_is_percentile_presented(
-    client: TestClient, db_session: Session, user_id: uuid.UUID
+    client: TestClient, db_session: Session, user_id: uuid.UUID, auth: dict[str, str]
 ) -> None:
     """§8.5 and ADR 0006: percentile, never a probability of an outcome."""
     source_id = db_session.execute(
@@ -242,7 +259,7 @@ def test_match_list_is_percentile_presented(
     )
     db_session.commit()
 
-    body = client.get("/api/v1/matches", headers={"X-User-Id": str(user_id)}).json()
+    body = client.get("/api/v1/matches", headers=auth).json()
     card = body["matches"][0]
     assert card["presentation"]["band"] == "top 5%"
     assert "roles reviewed for you" in card["presentation"]["summary"]
@@ -251,16 +268,14 @@ def test_match_list_is_percentile_presented(
     # §12.7: the apply URL is returned exactly as stored.
     assert card["apply_url"] == "https://boards.greenhouse.io/acme/jobs/1?gh_jid=42"
 
-    detail = client.get(
-        f"/api/v1/matches/{card['match_id']}", headers={"X-User-Id": str(user_id)}
-    ).json()
+    detail = client.get(f"/api/v1/matches/{card['match_id']}", headers=auth).json()
     assert detail["apply_url"] == card["apply_url"]
     assert detail["url_status"] == "live"
     assert "subscores" in detail
 
 
 def test_withheld_explains_each_reason(
-    client: TestClient, db_session: Session, user_id: uuid.UUID
+    client: TestClient, db_session: Session, user_id: uuid.UUID, auth: dict[str, str]
 ) -> None:
     source_id = db_session.execute(
         sa.text(
@@ -311,7 +326,7 @@ def test_withheld_explains_each_reason(
     )
     db_session.commit()
 
-    body = client.get("/api/v1/matches/withheld", headers={"X-User-Id": str(user_id)}).json()
+    body = client.get("/api/v1/matches/withheld", headers=auth).json()
     assert body["summary"] == {"work_authorization": 1, "location": 1}
     reasons = body["withheld"][0]["reasons"]
     # Withholding without an explanation is indistinguishable from a broken search.

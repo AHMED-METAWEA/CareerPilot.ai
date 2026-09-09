@@ -8,6 +8,7 @@ stay callable from the CLI and the API without a queue in between.
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -132,6 +133,33 @@ def run_match_users(ctx: TaskContext, payload: dict[str, Any]) -> dict[str, Any]
         "used_llm": report.used_llm,
         "tokens": report.tokens_in + report.tokens_out,
     }
+
+
+@handler(TaskType.DIGEST)
+def run_digest(ctx: TaskContext, payload: dict[str, Any]) -> dict[str, Any]:
+    """Compose and send the daily digest (§11.7).
+
+    One task per user, queued by the same handler with no payload, so a slow or
+    failing send for one person cannot hold up everybody else's.
+    """
+    from app.services.digest import DigestService
+
+    service = DigestService(ctx.session)
+    user_id = payload.get("user_id")
+
+    if user_id is None:
+        due = service.due_users()
+        for identifier in due:
+            enqueue(
+                ctx.session,
+                TaskType.DIGEST,
+                {"user_id": str(identifier)},
+                priority=3,
+                dedup_key=f"digest:{identifier}:{datetime.now(UTC):%Y-%m-%d}",
+            )
+        return {"queued_users": len(due)}
+
+    return service.send(uuid.UUID(str(user_id)))
 
 
 def _optional_llm(ctx: TaskContext, settings: Settings) -> ChatProvider | None:

@@ -44,6 +44,7 @@ class TaskType:
     EXPIRE_POSTINGS = "expire_postings"
     PRUNE_RAW = "prune_raw"
     RUN_EVAL = "run_eval"
+    PURGE_DELETED = "purge_deleted"
 
 
 @dataclass(frozen=True, slots=True)
