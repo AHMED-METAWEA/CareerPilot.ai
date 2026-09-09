@@ -25,12 +25,19 @@ funnel:
 models:
   embedding: intfloat/multilingual-e5-small
   reranker:  BAAI/bge-reranker-base
+  # Groq retired the Llama models this project was first configured against
+  # (both now 404 as model_not_found). Of what the catalogue still offers, the
+  # qwen3.8 model is the only one that satisfies strict `response_format:
+  # json_object` — the gpt-oss models emit a reasoning trace alongside the
+  # object, which fails Groq's own JSON validation, and qwen3.6 leaks `<think>`
+  # blocks into plain prose. Extraction and analysis therefore share a model
+  # until the catalogue offers a cheaper one that holds the JSON contract.
   extraction:
     provider: groq
-    model: llama-3.1-8b-instant
+    model: qwen/qwen3.8-27b
   analysis:
     provider: groq
-    model: llama-3.3-70b-versatile
+    model: qwen/qwen3.8-27b
   fallbacks: [gemini, ollama]
 
 dedup:

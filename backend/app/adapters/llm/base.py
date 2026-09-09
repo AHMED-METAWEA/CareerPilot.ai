@@ -84,6 +84,29 @@ REPAIR_INSTRUCTION = (
 )
 
 
+SCHEMA_INSTRUCTION = (
+    "\n\nReturn a single JSON object matching this schema exactly. Use these "
+    "field names verbatim, do not rename or abbreviate them, do not wrap the "
+    "object inside another key, and do not return a bare array.\n\n{schema}"
+)
+"""Every prompt used to end with "Return only JSON matching the schema" without
+ever showing the schema, which left the field names to the model's guess. That
+worked for as long as the configured model happened to guess the same names the
+Pydantic model used, and broke silently the day it changed: one provider
+returned a top-level array of `{"requirement": ...}` where the schema wanted
+`{"requirements": [{"text": ...}]}`, both attempts failed validation, and every
+posting was scored with no requirements at all.
+
+The schema is rendered from the Pydantic model itself, so it cannot drift from
+what is actually validated."""
+
+
+def _with_schema(system: str, schema: type[BaseModel]) -> str:
+    return system + SCHEMA_INSTRUCTION.format(
+        schema=json.dumps(schema.model_json_schema(), ensure_ascii=False, separators=(",", ":"))
+    )
+
+
 def complete_schema[T: BaseModel](
     provider: ChatProvider,
     *,
@@ -95,6 +118,7 @@ def complete_schema[T: BaseModel](
 ) -> tuple[T, LLMResult]:
     """Complete, parse and validate — with one repair retry, then hard failure."""
     started = time.monotonic()
+    system = _with_schema(system, schema)
     result = provider.chat(system=system, user=user, model=model, max_tokens=max_tokens)
 
     try:
