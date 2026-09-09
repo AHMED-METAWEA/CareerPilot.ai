@@ -78,6 +78,36 @@ GATE_SCAN_LIMIT = 5000
 """Postings pulled into stage 2 per run. The SQL pre-filter does the coarse work."""
 
 
+@dataclass(frozen=True, slots=True)
+class PipelineSettings:
+    """Which stages of the funnel are active.
+
+    Exists so the §9.3 ablation measures *this* pipeline rather than a
+    reimplementation of it — the configurations in the published table are this
+    same code with stages switched off.
+    """
+
+    use_lexical: bool = True
+    """BM25 over tsvector — the half that catches exact tool names."""
+    use_vector: bool = True
+    """pgvector similarity — the half that catches paraphrase and other languages."""
+    use_rerank: bool = True
+    use_gates: bool = True
+    use_decomposed_scoring: bool = True
+    """When false, the score is the retrieval/rerank similarity alone — the
+    'document cosine only' baseline the plan rejects (§8.1)."""
+
+    @property
+    def label(self) -> str:
+        if not self.use_decomposed_scoring and not self.use_rerank and not self.use_lexical:
+            return "document cosine only"
+        if not self.use_decomposed_scoring and not self.use_rerank:
+            return "+ BM25 fusion (RRF)"
+        if not self.use_decomposed_scoring:
+            return "+ cross-encoder rerank"
+        return "+ decomposed scorer with gates"
+
+
 @dataclass(slots=True)
 class MatchRunReport:
     profile_id: uuid.UUID
@@ -102,12 +132,14 @@ class MatchingService:
         embedder: EmbeddingBackend,
         reranker: Reranker | None = None,
         llm: ChatProvider | None = None,
+        pipeline: PipelineSettings | None = None,
     ) -> None:
         self.session = session
         self.config = config
         self.embedder = embedder
         self.reranker = reranker
         self.llm = llm
+        self.pipeline = pipeline or PipelineSettings()
         # Per-run, per-instance: a class attribute here would leak one
         # candidate's rerank scores into another candidate's normalisation.
         self._rerank_scores: dict[str, float] = {}
@@ -192,7 +224,11 @@ class MatchingService:
 
         for row in rows:
             snapshot = _posting_snapshot(row)
-            result = evaluate_gates(candidate, snapshot, gate_config, now=now)
+            result = (
+                evaluate_gates(candidate, snapshot, gate_config, now=now)
+                if self.pipeline.use_gates
+                else GateResult(passed=True, failures=())
+            )
             if result.passed:
                 eligible[snapshot.posting_id] = snapshot
             else:
@@ -250,16 +286,17 @@ class MatchingService:
             },
         ).all()
 
-        rankings = {
-            "bm25": [
+        rankings: dict[str, list[RetrievalHit]] = {}
+        if self.pipeline.use_lexical:
+            rankings["bm25"] = [
                 RetrievalHit(str(row.id), rank=index + 1, score=float(row.rank))
                 for index, row in enumerate(lexical)
-            ],
-            "vector": [
+            ]
+        if self.pipeline.use_vector:
+            rankings["vector"] = [
                 RetrievalHit(str(row.id), rank=index + 1, score=float(row.similarity))
                 for index, row in enumerate(vector)
-            ],
-        }
+            ]
         fused = reciprocal_rank_fusion(
             rankings, k=self.config.funnel.rrf_k, limit=self.config.funnel.fusion_top_n
         )
@@ -284,11 +321,17 @@ class MatchingService:
             ),
             {"ids": [uuid.UUID(posting_id) for posting_id in posting_ids]},
         ).all()
-        documents = [(str(row.id), f"{row.title}\n{row.body}") for row in rows]
+        # Preserve retrieval order: `rows` comes back in whatever order the
+        # database chose, and an ablation with reranking off must measure
+        # retrieval order rather than a shuffle.
+        by_id = {str(row.id): f"{row.title}\n{row.body}" for row in rows}
+        documents = [
+            (posting_id, by_id[posting_id]) for posting_id in posting_ids if posting_id in by_id
+        ]
         hits = rerank(
             self._query_text(candidate),
             documents,
-            self.reranker,
+            self.reranker if self.pipeline.use_rerank else None,
             top_n=self.config.funnel.rerank_top_n,
         )
         self._rerank_scores = {hit.posting_id: hit.score for hit in hits}
@@ -354,12 +397,22 @@ class MatchingService:
             if not bullet_vectors:
                 unavailable.append("requirement_alignment")
 
-            score = aggregate(
-                subscores,
-                GateResult(passed=True, failures=()),
-                weights,
-                unavailable=set(unavailable),
-            )
+            if self.pipeline.use_decomposed_scoring:
+                score = aggregate(
+                    subscores,
+                    GateResult(passed=True, failures=()),
+                    weights,
+                    unavailable=set(unavailable),
+                )
+            else:
+                # The rejected baseline (§8.1): similarity alone, no gates, no
+                # decomposition. Measured so the ablation can show what the rest
+                # of the pipeline is worth.
+                score = aggregate(
+                    subscores,
+                    GateResult(passed=True, failures=()),
+                    ScoreWeights(0.0, 0.0, 0.0, 1.0, 0.0),
+                )
 
             scored.append(
                 {

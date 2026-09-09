@@ -197,6 +197,168 @@ def sources_renormalize(
     )
 
 
+eval_app = typer.Typer(help="Evaluation harness (§9)")
+app.add_typer(eval_app, name="eval")
+
+
+@eval_app.command("rubric")
+def eval_rubric() -> None:
+    """Print the grading rubric annotators work from."""
+    from app.eval.golden import RUBRIC
+
+    typer.echo(RUBRIC)
+
+
+@eval_app.command("sample")
+def eval_sample(
+    profile: str = typer.Option(..., "--profile", help="Profile id to sample for"),
+    per_decile: int = typer.Option(6, help="Pairs per score decile"),
+    out: Path = typer.Option(Path("golden-sample.csv"), "--out"),
+) -> None:
+    """Draw a stratified sample of pairs to label (§9.1).
+
+    Stratified across score deciles on purpose: labelling only the top of the
+    ranking measures how good the system is at cases it already likes.
+    """
+    import csv
+
+    from app.eval.golden import sample_for_labelling
+
+    with session_scope() as session:
+        rows = sample_for_labelling(session, uuid.UUID(profile), per_decile=per_decile)
+
+    with out.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(
+            [
+                "profile_id",
+                "posting_id",
+                "decile",
+                "score",
+                "title",
+                "company",
+                "apply_url",
+                "grade",
+            ]
+        )
+        for row in rows:
+            writer.writerow(
+                [
+                    profile,
+                    row["posting_id"],
+                    row["decile"],
+                    round(float(str(row["total_score"] or 0)), 4),
+                    row["title"],
+                    row["company"],
+                    row["apply_url"],
+                    "",
+                ]
+            )
+    typer.echo(f"wrote {len(rows)} pairs to {out} — fill in the `grade` column (0-3)")
+    typer.echo("Rubric: careerpilot eval rubric")
+
+
+@eval_app.command("load-labels")
+def eval_load_labels(
+    path: Path = typer.Argument(..., help="Filled-in CSV from `eval sample`"),
+    labeller: str = typer.Option(..., "--labeller", help="Who graded these"),
+) -> None:
+    """Load one annotator's grades into `eval_labels`."""
+    import csv
+
+    from app.eval.golden import record_label
+
+    loaded = 0
+    with path.open("r", encoding="utf-8") as handle, session_scope() as session:
+        for row in csv.DictReader(handle):
+            grade = (row.get("grade") or "").strip()
+            if grade == "":
+                continue
+            record_label(
+                session,
+                profile_id=uuid.UUID(row["profile_id"]),
+                posting_id=uuid.UUID(row["posting_id"]),
+                grade=int(grade),
+                labeller=labeller,
+            )
+            loaded += 1
+    typer.echo(f"loaded {loaded} labels from {labeller}")
+
+
+@eval_app.command("agreement")
+def eval_agreement() -> None:
+    """Inter-annotator agreement and the κ ≥ 0.60 gate (§9.1)."""
+    from app.eval.golden import KAPPA_GATE, agreement
+
+    with session_scope() as session:
+        stats = agreement(session)
+
+    typer.echo(f"pairs      : {stats.pairs}")
+    typer.echo(f"annotators : {stats.labellers}")
+    typer.echo(f"grades     : {dict(sorted(stats.by_grade.items()))}")
+    if stats.cohens_kappa is not None:
+        typer.echo(f"Cohen's κ  : {stats.cohens_kappa}")
+    if stats.fleiss_kappa is not None:
+        typer.echo(f"Fleiss' κ  : {stats.fleiss_kappa}")
+    if stats.pairs:
+        verdict = "PASS" if stats.passes_gate else "FAIL"
+        typer.echo(f"\n{verdict}: the gate is κ ≥ {KAPPA_GATE}.")
+        if not stats.passes_gate:
+            typer.echo("The rubric is defective. Revise it before trusting any metric (§9.1).")
+
+
+@eval_app.command("run")
+def eval_run(
+    fail_on_regression: bool = typer.Option(False, "--check-regression"),
+    max_drop: float = typer.Option(2.0, "--max-drop", help="Points of NDCG@10"),
+) -> None:
+    """Run the ablation and print the §9.3 table."""
+    from app.adapters.embeddings import build_reranker
+    from app.eval.harness import EvaluationHarness, check_regression
+
+    config = get_config()
+    with session_scope() as session:
+        harness = EvaluationHarness(
+            session, config, reranker=build_reranker(config.models.reranker)
+        )
+        previous = harness.previous_ndcg()
+        report = harness.run()
+
+    if not report.results:
+        typer.echo("No labelled pairs yet. The golden set is human work (§9.1):")
+        typer.echo("  careerpilot eval sample --profile <id>   # draw a stratified sample")
+        typer.echo("  careerpilot eval load-labels <csv> --labeller <name>")
+        raise typer.Exit(code=0)
+
+    typer.echo(
+        f"{report.labelled_pairs} labelled pairs across {report.labelled_profiles} profiles\n"
+    )
+    typer.echo(report.markdown_table())
+
+    headline = report.headline
+    if headline is not None and fail_on_regression:
+        ok, message = check_regression(headline.metrics.ndcg_at_10, previous, tolerance=max_drop)
+        typer.echo(f"\n{message}")
+        if not ok:
+            raise typer.Exit(code=1)
+
+
+@eval_app.command("controls")
+def eval_controls() -> None:
+    """Run the negative controls (§9.4). These need no labels."""
+    from app.eval.controls_runner import run_controls
+
+    with session_scope() as session:
+        summary = run_controls(session, get_config())
+
+    for control in summary["controls"]:
+        mark = "PASS" if control["passed"] else "FAIL"
+        typer.echo(f"[{mark}] {control['name']}: {control['detail']}")
+    if not summary["passed"]:
+        typer.echo("\nA failed control means the score is not measuring fit (§9.4).")
+        raise typer.Exit(code=1)
+
+
 @app.command("redo-dedup")
 def redo_dedup(
     batch: int = typer.Option(200, help="Postings per queued task"),

@@ -1,7 +1,17 @@
 # Evaluation
 
-**Status:** Phase 2 deliverable (§9). This file is the plan of record and the
-home of measurements already taken; ranking metrics arrive with the harness.
+**Status:** the harness, metrics, ablation runner, negative controls and CI gate
+are built. The golden set is not: 300 human-graded pairs is human work, and a
+benchmark a machine wrote to grade itself measures nothing.
+
+```bash
+careerpilot eval rubric                              # the grading criteria
+careerpilot eval sample --profile <id>               # stratified sample to grade
+careerpilot eval load-labels graded.csv --labeller amir
+careerpilot eval agreement                           # the κ ≥ 0.60 gate
+careerpilot eval run --check-regression              # the ablation table
+careerpilot eval controls                            # needs no labels
+```
 
 Evaluation is a subsystem, not a phase-end activity. No feature after Phase 2
 ships without a measurement, and `.github/workflows/eval.yml` fails a build on a
@@ -37,14 +47,47 @@ drop of more than 2 points in NDCG@10.
 | + cross-encoder rerank | — | — |
 | + decomposed scorer with gates | — | — |
 
-## Negative controls
+## Negative controls — built, and currently failing
+
+These need no labels, so they run today. Two of the three fail in the
+development configuration, and that is the point of having them: they say the
+score is not yet measuring fit well enough to trust a ranking metric derived
+from it.
+
+| Control | Threshold | Measured | Verdict |
+|---|---|---|---|
+| Cross-domain separation | ≥ 0.15 | 0.077 (in-domain 0.342, out-of-domain 0.264) | **fail** |
+| Seniority monotonicity | single peak, no reversals | peak at the candidate's own level | pass |
+| Shuffled pairings | ≥ 0.10 | 0.041 (true 0.356, shuffled 0.315) | **fail** |
+
+**What the failures mean.** Both failing controls depend on semantic
+similarity, and this configuration has no semantic model: without the `[ml]`
+extra, the embedding backend is a hashed lexical projection that cannot relate
+"NLP" to "معالجة اللغة الطبيعية" or a data-engineering CV to a data-engineering
+posting except through shared words. A decomposition run confirms it — in-domain
+`skill_coverage` averaged 0.012, because the test profile holds three skills
+against postings listing fifteen.
+
+**What it does not mean.** The thresholds are not the problem, and lowering them
+would convert a real finding into a passing build. §9.4 is explicit: a control
+that fails is not a tuning opportunity.
+
+**What would settle it:** installing the `[ml]` extra so the real embedding and
+reranker models run, and extracting a profile with a real inference key rather
+than a three-skill stub. Both are single configuration changes; neither is
+code.
+
+## Negative controls — what each one is for
 
 - A backend-engineering CV scored against nursing and legal postings. Weak
-  separation would mean the scorer measures writing style, not fit.
+  separation means the scorer measures writing style, not fit.
 - Identical postings differing only in stated seniority; the score must move
   monotonically.
 - Shuffled CV–posting pairings; the score distribution must be visibly distinct
-  from true pairings.
+  from true pairings. Note that this control needs at least two distinct
+  candidates to mean anything — with one profile in the database it reports a
+  separation of exactly zero, which reads as a scorer failure and is not one.
+  Synthetic candidates from other disciplines are used to keep it meaningful.
 
 ---
 
@@ -165,6 +208,19 @@ remaining weights rescaled, so an unassessable posting competes only on the
 terms that were measurable. The affected match reports say so explicitly
 ("No skill requirements could be extracted from this posting") rather than
 showing "0/0 requirements matched", which reads as a failed match.
+
+### Scoring — alternatives counted as separate requirements
+
+Found by the cross-domain control: in-domain skill coverage was averaging 0.012,
+which no ranking metric would have explained.
+
+"Experience in Python **or** Java **or** Go" was expanded into three
+requirements, so a candidate who met it scored one third of it. A posting
+listing three such requirements gave a fully qualified candidate 4/8.
+
+Requirement expansion is now alternation-aware: conjunctions split ("SQL **and**
+PostgreSQL" is two things to know), alternations group, and a missing
+alternation reports as `Python (or Java, Go)` so the gap names the options.
 
 ### Still to measure
 

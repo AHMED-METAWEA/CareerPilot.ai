@@ -21,8 +21,10 @@ references throughout the code point at it.
 | Phase | Scope | State |
 |---|---|---|
 | **0 — Data spine** | Schema, six ATS adapters, normalisation, five-stage dedup, company resolution, discovery worker | **built** — 141 validated boards |
-| **1 — Matching core** | CV ingestion, grounded profile extraction, gates, hybrid retrieval, rerank, decomposed scoring, apply-URL verification | **built** — 343 tests, 88% coverage |
-| 2 — Evaluation | Golden set, NDCG/MRR/P@5, ablation study, CI regression gate | not started |
+
+378 tests, 88% coverage. `make check` runs everything CI does.
+| **1 — Matching core** | CV ingestion, grounded profile extraction, gates, hybrid retrieval, rerank, decomposed scoring, apply-URL verification | **built** |
+| **2 — Evaluation** | Metrics, ablation runner, negative controls, CI regression gate | **built** — golden set is human work, see below |
 | 3 — Product | Multi-user auth, Next.js UI, digest, export/delete (URL verification landed early — Phase 1's gates need it) | not started |
 | 4–6 | Candidate tooling · bilingual pipeline · personalisation | not started |
 
@@ -143,6 +145,29 @@ global-remote or EU; one is Egyptian and three are wider MENA. That is the
 structural problem §5.5 describes — Wuzzuf, Bayt, Forasna and Tanqeeb publish no
 public API — and closing it is board curation and partnership work, not
 engineering.
+
+### Phase 2 — measurement, and what it currently says
+
+The harness, the §9.2 metrics, the four-configuration ablation, the negative
+controls and the CI regression gate are built. The golden set is not: 300
+human-graded pairs is human work, and a benchmark generated to grade its own
+system measures nothing. The tooling to produce it is there:
+
+```bash
+careerpilot eval rubric                                # the 0–3 criteria
+careerpilot eval sample --profile <id>                 # stratified across deciles
+careerpilot eval load-labels graded.csv --labeller amir
+careerpilot eval agreement                             # the κ ≥ 0.60 gate
+careerpilot eval run --check-regression                # the ablation table
+```
+
+The negative controls need no labels and run today — **two of the three
+currently fail**, and that is them working. Cross-domain separation is 0.077
+against a threshold of 0.15, because without the `[ml]` extra there is no
+semantic model: the fallback embedder relates documents only through shared
+words. The thresholds are not lowered to make the build green
+([EVALUATION.md](docs/EVALUATION.md) records the numbers and what would settle
+them).
 
 ## Development
 

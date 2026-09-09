@@ -1,16 +1,19 @@
 name: Evaluation gate
 
-# Phase 2 deliverable (§9.6): the ranking harness runs on any change to
-# matching, scoring or model configuration, and a drop of more than 2 points in
-# NDCG@10 fails the build.
+# §9.6: the harness runs on any change to matching, scoring or model
+# configuration, and a drop of more than two points in NDCG@10 fails the build.
 #
-# The workflow exists now, wired and skipping, so that the gate is a
-# precondition of the first matching commit rather than an afterthought.
+# The negative controls (§9.4) run on every trigger because they need no
+# labels. The ablation runs only when the golden set has labels in it — the
+# benchmark is human work, and a harness that invented labels to grade itself
+# would measure nothing.
 on:
   pull_request:
     paths:
       - "backend/app/domain/matching/**"
       - "backend/app/domain/scoring/**"
+      - "backend/app/domain/jobs/requirements.py"
+      - "backend/app/services/matching.py"
       - "backend/app/eval/**"
       - "backend/config/config.yaml"
   workflow_dispatch:
@@ -18,20 +21,53 @@ on:
 jobs:
   evaluate:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: careerpilot
+          POSTGRES_PASSWORD: careerpilot
+          POSTGRES_DB: careerpilot
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U careerpilot"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+
+    env:
+      DATABASE_URL: postgresql+psycopg://careerpilot:careerpilot@localhost:5432/careerpilot
+
     defaults:
       run:
         working-directory: backend
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Harness status
+          cache: pip
+
+      - name: Install
         run: |
-          if [ ! -f app/eval/harness.py ]; then
-            echo "::notice::Evaluation harness is a Phase 2 deliverable and is not built yet."
-            echo "Matching and scoring code must not merge before it exists (§9.6)."
-            exit 0
-          fi
-          pip install -e ".[dev,ml]"
-          python -m app.eval.harness --check-regression --max-drop 2.0
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Migrate
+        run: alembic upgrade head
+
+      - name: Metric and control unit tests
+        # The metrics and controls are pure; these run everywhere and are what
+        # keeps the harness itself honest.
+        run: pytest tests/unit/test_eval_metrics.py tests/unit/test_negative_controls.py -q
+
+      - name: Harness tests
+        run: pytest tests/integration/test_eval_harness.py -q
+
+      - name: Ablation and regression gate
+        # Reports and exits 0 when the golden set is empty: the benchmark is
+        # human work (§9.1), and its absence is a fact to state, not a failure
+        # to fabricate around.
+        run: python -m app.cli eval run --check-regression --max-drop 2.0

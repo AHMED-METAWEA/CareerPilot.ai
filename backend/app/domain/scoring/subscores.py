@@ -72,7 +72,8 @@ def skill_coverage(
         weight = MUST_HAVE_WEIGHT if requirement.is_must_have else 1.0
         available += weight
 
-        hit = skill in candidate_skills
+        # "Python or Java or Go" is met by any one of them.
+        hit = requirement.satisfied_by(candidate_skills)
         if not hit and fuzzy_match is not None:
             hit = fuzzy_match(skill, candidate_skills) is not None
 
@@ -80,9 +81,14 @@ def skill_coverage(
             matched.append(skill)
             earned += weight
         else:
-            missing.append(skill)
+            label = (
+                f"{skill} (or {', '.join(requirement.alternatives)})"
+                if requirement.alternatives
+                else skill
+            )
+            missing.append(label)
             if requirement.is_must_have:
-                missing_must_haves.append(skill)
+                missing_must_haves.append(label)
 
     return SkillCoverage(
         score=round(earned / available, 4) if available else 1.0,

@@ -303,6 +303,17 @@ class PostingRequirement(BaseModel):
     is_must_have: bool = False
     skill: str | None = None
     """Canonical skill name, when the requirement resolved to one."""
+    alternatives: tuple[str, ...] = ()
+    """Other skills that satisfy this same requirement.
+
+    "Python or Java or Go" is one thing to know, not three. Counting the
+    alternatives separately means a candidate who meets the requirement scores a
+    third of it."""
+
+    def satisfied_by(self, held: frozenset[str]) -> bool:
+        if self.skill and self.skill in held:
+            return True
+        return any(alternative in held for alternative in self.alternatives)
 
 
 class PostingSnapshot(BaseModel):

@@ -5,11 +5,14 @@ from __future__ import annotations
 from app.domain.jobs.requirements import (
     ExtractedRequirements,
     classify_kind,
+    expand_skill_requirements,
     extract_requirements_heuristic,
     ground_requirements,
     sponsorship_stance,
     stated_min_years,
 )
+from app.domain.models import PostingRequirement
+from app.domain.scoring.subscores import skill_coverage
 
 JD = """About the role
 You will own our billing platform end to end.
@@ -103,3 +106,56 @@ def test_arabic_requirement_markers() -> None:
     requirements = extract_requirements_heuristic(arabic)
     assert len(requirements) == 2
     assert all(requirement.is_must_have for requirement, _ in requirements)
+
+
+# ── Alternatives (found by the §9.4 controls) ─────────────────────────
+
+
+def find_known(text: str) -> list[str]:
+    return [
+        name
+        for name in ("Python", "Java", "Go", "AWS", "Azure", "SQL", "PostgreSQL")
+        if name.casefold() in text.casefold()
+    ]
+
+
+def test_alternatives_are_one_requirement_not_several() -> None:
+    """ "Python or Java or Go" is one thing to know.
+
+    Expanding alternatives into separate requirements gave a candidate who met
+    every requirement in a posting a coverage of 4/8.
+    """
+    requirements = [
+        PostingRequirement(text="Experience in Python or Java or Go", kind="skill"),
+        PostingRequirement(text="Strong SQL and PostgreSQL skills", kind="skill"),
+    ]
+    expanded = expand_skill_requirements(requirements, find_known)
+
+    assert len(expanded) == 3, "an alternation is one requirement; a conjunction is several"
+    alternation = next(item for item in expanded if item.alternatives)
+    assert set(alternation.alternatives) | {alternation.skill} == {"Python", "Java", "Go"}
+    assert alternation.satisfied_by(frozenset({"Go"}))
+    assert not alternation.satisfied_by(frozenset({"Rust"}))
+
+
+def test_a_candidate_meeting_every_requirement_scores_full_coverage() -> None:
+    requirements = [
+        PostingRequirement(text="Python or Java", kind="skill", is_must_have=True),
+        PostingRequirement(text="AWS or Azure", kind="skill", is_must_have=True),
+        PostingRequirement(text="SQL", kind="skill", is_must_have=True),
+    ]
+    expanded = expand_skill_requirements(requirements, find_known)
+    coverage = skill_coverage(frozenset({"Python", "AWS", "SQL"}), expanded)
+
+    assert coverage.fraction == "3/3"
+    assert coverage.score == 1.0
+
+
+def test_a_missing_alternation_names_the_options() -> None:
+    """A gap the candidate can act on: which of the alternatives to learn."""
+    requirements = [PostingRequirement(text="Python or Java", kind="skill", is_must_have=True)]
+    expanded = expand_skill_requirements(requirements, find_known)
+    coverage = skill_coverage(frozenset({"Rust"}), expanded)
+
+    assert len(coverage.missing_must_haves) == 1
+    assert "or" in coverage.missing_must_haves[0]

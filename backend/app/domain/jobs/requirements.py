@@ -267,20 +267,54 @@ def expand_skill_requirements(
     """
     expanded: list[PostingRequirement] = []
     seen: set[tuple[str, bool]] = set()
+
     for requirement in requirements:
         if requirement.kind not in {"skill", "experience"}:
             continue
-        names = [requirement.skill] if requirement.skill else find_skills(requirement.text)
-        for name in names:
-            if not name or (name, requirement.is_must_have) in seen:
+        if requirement.skill:
+            groups: list[list[str]] = [[requirement.skill]]
+        else:
+            groups = _skill_groups(requirement.text, find_skills)
+
+        for group in groups:
+            primary = group[0]
+            key = (primary, requirement.is_must_have)
+            if not primary or key in seen:
                 continue
-            seen.add((name, requirement.is_must_have))
+            seen.add(key)
             expanded.append(
                 PostingRequirement(
                     text=requirement.text,
                     kind="skill",
                     is_must_have=requirement.is_must_have,
-                    skill=name,
+                    skill=primary,
+                    alternatives=tuple(group[1:]),
                 )
             )
     return expanded
+
+
+_CONJUNCTION = re.compile(r"\b(?:and|as well as|plus)\b|;", re.I)
+_ALTERNATION = re.compile(r"\b(?:or|either)\b|/", re.I)
+
+
+def _skill_groups(text_value: str, find_skills: Callable[[str], list[str]]) -> list[list[str]]:
+    """Group the skills named in one requirement into what must each be held.
+
+    Conjunctions split ("SQL **and** PostgreSQL" is two things to know);
+    alternations group ("Python **or** Java **or** Go" is one). A comma list is
+    an alternation only when it ends in one — "AWS, Azure or GCP" is a choice,
+    while "Python, SQL, Docker" is three requirements.
+    """
+    groups: list[list[str]] = []
+    for segment in _CONJUNCTION.split(text_value):
+        if not segment or not segment.strip():
+            continue
+        found = find_skills(segment)
+        if not found:
+            continue
+        if len(found) > 1 and _ALTERNATION.search(segment):
+            groups.append(found)
+        else:
+            groups.extend([skill] for skill in found)
+    return groups
