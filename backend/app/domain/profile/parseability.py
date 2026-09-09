@@ -24,6 +24,13 @@ import re
 from dataclasses import dataclass, field
 from enum import StrEnum
 
+from app.domain.text.arabic import (
+    detect_language,
+    detect_sections,
+    is_mixed_script,
+    strip_invisibles,
+)
+
 MIN_QUALITY = 0.60
 """Below this, extraction is not attempted. §11.1 step 5."""
 
@@ -33,14 +40,13 @@ MIN_QUALITY = 0.60
 CHARS_PER_PAGE_GOOD = 1500
 CHARS_PER_PAGE_POOR = 400
 
+# The Latin half. The Arabic half is not written here as a pattern: Arabic
+# headings vary orthographically (الخبرة / الخبره / الخبرات), so they are matched
+# against folded text by `detect_sections` rather than by an alternation that
+# would have to list every spelling (§Phase 5).
 SECTION_PATTERNS: dict[str, re.Pattern[str]] = {
-    "experience": re.compile(
-        r"\b(work\s+)?experience\b|\bemployment\b|\bcareer\s+history\b|الخبرة|الخبرات|الخبره",
-        re.I,
-    ),
-    "education": re.compile(
-        r"\beducation\b|\bacademic\b|\bqualifications\b|التعليم|المؤهلات", re.I
-    ),
+    "experience": re.compile(r"\b(work\s+)?experience\b|\bemployment\b|\bcareer\s+history\b", re.I),
+    "education": re.compile(r"\beducation\b|\bacademic\b|\bqualifications\b", re.I),
     "skills": re.compile(r"\bskills\b|\btechnical\s+skills\b|\bcompetenc", re.I),
     "contact": re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+|\+?\d[\d\s()-]{7,}\d"),
 }
@@ -81,6 +87,11 @@ class ParseabilityReport:
     has_contact: bool
     page_count: int
     character_count: int
+    language: str = "en"
+    is_mixed_script: bool = False
+    """Reported, not resolved. A bilingual CV is normal in this market, and the
+    pipeline needs to know so it can run both analysers rather than pick one
+    and lose half the document (§Phase 5)."""
     findings: tuple[Finding, ...] = field(default=())
 
     @property
@@ -96,6 +107,10 @@ def score_parseability(text: str, *, page_count: int = 1) -> ParseabilityReport:
     concrete fix.
     """
     page_count = max(page_count, 1)
+    # Bidi controls and zero-width characters are invisible, and an extractor
+    # emits hundreds of them into an Arabic CV. Counted as text, they inflate
+    # the yield of a document that recovered almost nothing.
+    text = strip_invisibles(text)
     characters = len(text.strip())
     per_page = characters / page_count
 
@@ -103,7 +118,15 @@ def score_parseability(text: str, *, page_count: int = 1) -> ParseabilityReport:
         (per_page - CHARS_PER_PAGE_POOR) / (CHARS_PER_PAGE_GOOD - CHARS_PER_PAGE_POOR)
     )
 
-    found = tuple(name for name, pattern in SECTION_PATTERNS.items() if pattern.search(text))
+    # Either script counts. An Arabic CV with "الخبرة" and "التعليم" has the
+    # headings a parser needs; scoring it as though it had none told the
+    # candidate to fix something that was not broken.
+    arabic_sections = detect_sections(text)
+    found = tuple(
+        name
+        for name, pattern in SECTION_PATTERNS.items()
+        if pattern.search(text) or name in arabic_sections
+    )
     missing = tuple(name for name in SECTION_PATTERNS if name not in found)
     section_score = len(found) / len(SECTION_PATTERNS)
 
@@ -128,6 +151,8 @@ def score_parseability(text: str, *, page_count: int = 1) -> ParseabilityReport:
         has_contact=has_contact,
         page_count=page_count,
         character_count=characters,
+        language=detect_language(text),
+        is_mixed_script=is_mixed_script(text),
         findings=_findings(per_page, missing, damage, has_contact, text),
     )
 

@@ -9,6 +9,14 @@ type Result =
   | { kind: "refused"; invented: string[] }
   | { kind: "unavailable"; message: string };
 
+type Labels = {
+  heading: string;
+  intro: string;
+  rewrite: string;
+  rewriting: string;
+  refused: string;
+};
+
 /**
  * Rewriting the candidate's own bullets toward this posting (§18, Phase 4).
  *
@@ -19,7 +27,15 @@ type Result =
  * The original stays on screen next to the rewrite. The candidate decides which
  * one is true to their work; nothing is written back to their CV.
  */
-export function BulletWorkshop({ matchId, bullets }: { matchId: string; bullets: string[] }) {
+export function BulletWorkshop({
+  matchId,
+  bullets,
+  labels,
+}: {
+  matchId: string;
+  bullets: string[];
+  labels: Labels;
+}) {
   const [results, setResults] = useState<Record<number, Result>>({});
 
   async function rewrite(index: number, bullet: string) {
@@ -45,24 +61,21 @@ export function BulletWorkshop({ matchId, bullets }: { matchId: string; bullets:
 
   return (
     <section className="rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] p-5">
-      <h2 className="text-sm font-medium">Your bullets, aimed at this posting</h2>
-      <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
-        Rephrasing only. A rewrite that adds a number, a tool or an employer your CV does not
-        mention is discarded before you see it.
-      </p>
+      <h2 className="text-sm font-medium">{labels.heading}</h2>
+      <p className="mt-1 text-xs text-[var(--color-ink-soft)]">{labels.intro}</p>
 
       <ul className="mt-4 space-y-4">
         {bullets.map((bullet, index) => {
           const result = results[index] ?? { kind: "idle" };
           return (
-            <li key={bullet} className="border-l-2 border-[var(--color-line)] pl-3">
+            <li key={bullet} className="border-s-2 border-[var(--color-line)] ps-3">
               <p className="text-sm">{bullet}</p>
               <button
                 onClick={() => rewrite(index, bullet)}
                 disabled={result.kind === "working"}
                 className="mt-2 text-xs underline disabled:opacity-50"
               >
-                {result.kind === "working" ? "Rewriting…" : "Rewrite for this role"}
+                {result.kind === "working" ? labels.rewriting : labels.rewrite}
               </button>
 
               {result.kind === "ready" ? (
@@ -73,9 +86,7 @@ export function BulletWorkshop({ matchId, bullets }: { matchId: string; bullets:
 
               {result.kind === "refused" ? (
                 <div className="mt-2 rounded-md border border-[var(--color-missing)]/40 p-3">
-                  <p className="text-xs">
-                    The rewrite added something your CV does not say, so it was discarded.
-                  </p>
+                  <p className="text-xs">{labels.refused}</p>
                   {result.invented.length > 0 ? (
                     <ul className="mt-1 text-xs text-[var(--color-ink-soft)]">
                       {result.invented.map((item) => (

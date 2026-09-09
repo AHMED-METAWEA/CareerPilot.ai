@@ -32,6 +32,12 @@ from app.config import AppConfig
 from app.domain.matching.rerank import Reranker
 from app.eval.golden import load_labels
 from app.eval.metrics import RankingMetrics, evaluate_rankings
+from app.eval.splits import (
+    CrossLingualReport,
+    evaluate_by_language,
+    posting_languages,
+    profile_languages,
+)
 from app.services.matching import MatchingService, PipelineSettings
 
 log = structlog.get_logger(__name__)
@@ -69,6 +75,10 @@ class HarnessReport:
     results: list[ConfigurationResult] = field(default_factory=list)
     labelled_profiles: int = 0
     labelled_pairs: int = 0
+    cross_lingual: CrossLingualReport | None = None
+    """§18 Phase 5. Computed from the shipping configuration only: ablations
+    answer "does this component earn its place", and asking that question per
+    language across four cells produces sixteen numbers nobody reads."""
 
     @property
     def headline(self) -> ConfigurationResult | None:
@@ -76,11 +86,14 @@ class HarnessReport:
         return self.results[-1] if self.results else None
 
     def as_dict(self) -> dict[str, Any]:
-        return {
+        payload: dict[str, Any] = {
             "labelled_profiles": self.labelled_profiles,
             "labelled_pairs": self.labelled_pairs,
             "ablation": [result.as_row() for result in self.results],
         }
+        if self.cross_lingual is not None:
+            payload["cross_lingual"] = self.cross_lingual.as_dict()
+        return payload
 
     def markdown_table(self) -> str:
         """The §9.3 artefact, in the form the plan publishes it."""
@@ -127,6 +140,8 @@ class EvaluationHarness:
             )
             return report
 
+        shipping_rankings: dict[str, list[str]] = {}
+
         for settings in configurations:
             rankings: dict[str, list[str]] = {}
             latencies: list[float] = []
@@ -135,6 +150,11 @@ class EvaluationHarness:
                 started = time.monotonic()
                 rankings[profile_id] = self._rank(uuid.UUID(profile_id), settings)
                 latencies.append((time.monotonic() - started) * 1000)
+
+            # The last configuration is the one that ships (see
+            # ABLATION_CONFIGURATIONS); the language splits describe the product,
+            # not an ablation of it.
+            shipping_rankings = rankings
 
             report.results.append(
                 ConfigurationResult(
@@ -150,6 +170,13 @@ class EvaluationHarness:
                     },
                 )
             )
+
+        report.cross_lingual = evaluate_by_language(
+            shipping_rankings,
+            labels,
+            posting_languages=posting_languages(self.session),
+            profile_languages=profile_languages(self.session),
+        )
 
         self._record(report)
         return report

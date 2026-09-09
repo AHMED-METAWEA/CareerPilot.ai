@@ -89,3 +89,55 @@ def test_arabic_headings_are_recognised() -> None:
 def test_quality_is_bounded() -> None:
     assert 0.0 <= score_parseability("").quality <= 1.0
     assert 0.0 <= score_parseability(GOOD_CV * 10).quality <= 1.0
+
+
+# ── Arabic and mixed-script CVs (§18, Phase 5) ────────────────────────
+
+ARABIC_CV = """أحمد متاوع — مهندس بيانات أول
+القاهرة، مصر · ahmed@example.com · +20 100 000 0000
+
+نبذة
+مهندس بيانات لديه خبرة ٥ سنوات في بناء خطوط معالجة البيانات وأنظمة التدفق،
+مع تركيز على الجودة وقابلية التتبع في كل مرحلة من مراحل المعالجة اليومية.
+
+الخبرة العملية
+- مهندس بيانات، إنستاباج (٢٠٢١–٢٠٢٤): بناء خطوط المعالجة باستخدام Python وKafka،
+  بمعالجة أربعة ملايين حدث يوميًا، وخفض زمن الإدخال من أربعين دقيقة إلى أقل من ثلاث.
+- محلل بيانات، فودافون مصر (٢٠١٩–٢٠٢١): تقارير SQL ونماذج PostgreSQL وتحليل
+  سلوك المستخدمين عبر لوحات متابعة أسبوعية للفرق التجارية.
+
+التعليم
+بكالوريوس هندسة الحاسبات، جامعة القاهرة (٢٠١٩).
+
+المهارات
+Python، SQL، Apache Kafka، Apache Airflow، PostgreSQL، Docker
+
+اللغات
+العربية (اللغة الأم)، الإنجليزية (متقدم)
+"""
+
+
+def test_an_arabic_cv_gets_credit_for_the_headings_it_has() -> None:
+    """The Arabic skills heading was invisible before Phase 5, which cost this
+    CV a quarter of its section score and pushed it toward the processability
+    cliff for a fault it did not have."""
+    report = score_parseability(ARABIC_CV)
+
+    assert set(report.sections_found) == {"experience", "education", "skills", "contact"}
+    assert report.sections_missing == ()
+    assert report.is_processable
+
+
+def test_the_script_of_a_cv_is_reported() -> None:
+    report = score_parseability(ARABIC_CV)
+    assert report.language == "ar"
+    assert report.is_mixed_script, "Arabic prose naming Latin technologies is the normal case"
+
+
+def test_invisible_characters_do_not_count_as_recovered_text() -> None:
+    """An extractor emits hundreds of bidi marks into an Arabic CV. Counted as
+    text, they make a document that recovered almost nothing look readable."""
+    padded = ARABIC_CV + "‏" * 2000
+    assert (
+        score_parseability(padded).character_count == score_parseability(ARABIC_CV).character_count
+    )

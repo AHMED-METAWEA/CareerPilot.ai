@@ -73,7 +73,7 @@ function Group({ title, items }: { title: string; items: RequirementEvidence[] }
               </div>
 
               {item.evidence_from_cv ? (
-                <blockquote className="mt-3 border-l-2 border-[var(--color-accent)] pl-3 text-sm text-[var(--color-ink-soft)]">
+                <blockquote className="mt-3 border-s-2 border-[var(--color-accent)] ps-3 text-sm text-[var(--color-ink-soft)]">
                   <span className="block text-xs uppercase tracking-wide">From your CV</span>
                   {item.evidence_from_cv}
                 </blockquote>

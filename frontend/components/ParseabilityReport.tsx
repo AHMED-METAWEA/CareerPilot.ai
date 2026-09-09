@@ -39,12 +39,25 @@ export function ParseabilityReport({ report }: { report: Report }) {
         <Stat label="Pages" value={String(report.page_count)} />
       </dl>
 
+      {report.language === "ar" || report.is_mixed_script ? (
+        <p className="mt-3 text-xs text-[var(--color-ink-soft)]">
+          Read as{" "}
+          {report.is_mixed_script
+            ? "Arabic and English together"
+            : report.language === "ar"
+              ? "Arabic"
+              : "English"}
+          . Both scripts are matched in the same space, so a CV that names its
+          technologies in English inside Arabic prose loses nothing.
+        </p>
+      ) : null}
+
       {report.findings.length > 0 ? (
         <ul className="mt-4 space-y-2">
           {report.findings.map((finding) => (
             <li
               key={finding.code}
-              className={`rounded-md border-l-2 bg-[var(--color-paper)] p-3 text-sm ${
+              className={`rounded-md border-s-2 bg-[var(--color-paper)] p-3 text-sm ${
                 SEVERITY[finding.severity] ?? SEVERITY.info
               }`}
             >

@@ -46,7 +46,7 @@ export function MatchCard({ match }: { match: MatchCardData }) {
       <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-[var(--color-ink-soft)]">
         <Verification status={match.url_status} at={match.last_verified_at} />
         {match.posted_at ? <span>Posted {relative(match.posted_at)}</span> : null}
-        <Link href={`/matches/${match.match_id}`} className="ml-auto underline">
+        <Link href={`/matches/${match.match_id}`} className="ms-auto underline">
           See the evidence
         </Link>
       </div>

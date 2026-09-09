@@ -150,6 +150,9 @@ export type ParseabilityReport = {
   sections_missing: string[];
   layout_damage: number;
   page_count: number;
+  /** Which script the CV was read as, and whether it genuinely used both. */
+  language: string;
+  is_mixed_script: boolean;
   findings: ParseabilityFinding[];
 };
 

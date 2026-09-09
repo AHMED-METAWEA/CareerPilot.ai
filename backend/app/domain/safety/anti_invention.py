@@ -30,12 +30,11 @@ Four design points, each of which the adversarial set found the hard way:
 from __future__ import annotations
 
 import re
-import unicodedata
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from enum import StrEnum
 
-from app.domain.jobs.normalize import normalize_arabic
+from app.domain.text.arabic import normalize_for_matching
 
 
 class Violation(StrEnum):
@@ -180,7 +179,16 @@ class DiffResult:
 
 
 def normalize_for_match(text: str) -> str:
-    return normalize_arabic(unicodedata.normalize("NFKC", text)).casefold()
+    """Fold both sides of every comparison identically (§Phase 5).
+
+    Script segmentation is part of the fold: Arabic attaches its conjunction to
+    the following word with no space, so a CV reading "خبرة في Python وKafka"
+    contains `Kafka` only after the boundary is opened. Without it the diff
+    reads Kafka as absent from the CV and refuses a letter that was telling the
+    truth — the worst failure this component has, because it is invisible and
+    it punishes honesty.
+    """
+    return normalize_for_matching(text)
 
 
 def _mentions(haystack_normalized: str, term: str) -> bool:

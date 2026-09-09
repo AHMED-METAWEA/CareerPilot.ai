@@ -4,6 +4,7 @@ import { EvidencePanel } from "@/components/EvidencePanel";
 import { GapReport } from "@/components/GapReport";
 import { relative, Verification } from "@/components/MatchCard";
 import { api, isSignedIn, type MatchDetail } from "@/lib/api";
+import { currentLocale, translator } from "@/lib/i18n";
 
 /**
  * The evidence view (§11.6 step 3) — the page the whole system exists to
@@ -22,7 +23,11 @@ export default async function MatchDetailPage({
   if (!(await isSignedIn())) redirect("/login");
   const { id } = await params;
 
-  const match = await api<MatchDetail>(`/api/v1/matches/${id}`);
+  const [match, locale] = await Promise.all([
+    api<MatchDetail>(`/api/v1/matches/${id}`),
+    currentLocale(),
+  ]);
+  const t = translator(locale);
   const location =
     match.locations?.map((l) => l.raw ?? l.city).filter(Boolean).join(" · ") ||
     (match.remote_type === "remote" ? "Remote" : null);
@@ -30,7 +35,12 @@ export default async function MatchDetailPage({
   return (
     <div className="space-y-6">
       <Link href="/matches" className="text-sm underline">
-        ← Back to your shortlist
+        {/* The arrow is mirrored by the RTL variant rather than swapped for a
+            different character: "back" is the direction reading came from. */}
+        <span aria-hidden className="inline-block rtl:rotate-180">
+          ←
+        </span>{" "}
+        {t("match.back")}
       </Link>
 
       <header>
@@ -46,22 +56,22 @@ export default async function MatchDetailPage({
           <Verification status={match.url_status} at={match.last_verified_at} />
           {match.posted_at ? <span> · Posted {relative(match.posted_at)}</span> : null}
         </div>
-        <div className="ml-auto flex gap-2">
+        <div className="ms-auto flex gap-2">
           <form action={`/api/jobs/${match.posting_id}/save`} method="post">
             <button className="rounded-md border border-[var(--color-line)] px-3 py-1.5 text-sm">
-              Save
+              {t("match.save")}
             </button>
           </form>
           <form action={`/api/jobs/${match.posting_id}/dismiss`} method="post">
             <button className="rounded-md border border-[var(--color-line)] px-3 py-1.5 text-sm">
-              Not for me
+              {t("match.dismiss")}
             </button>
           </form>
           <Link
             href={`/matches/${match.match_id}/prepare`}
             className="rounded-md border border-[var(--color-line)] px-3 py-1.5 text-sm"
           >
-            Prepare
+            {t("match.prepare")}
           </Link>
           {/* The apply link is the employer's own, opened in a new tab. We do
               not submit anything, and we do not wrap or shorten the URL. */}
@@ -71,7 +81,7 @@ export default async function MatchDetailPage({
             rel="noopener noreferrer"
             className="rounded-md bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-white"
           >
-            Apply on the employer&apos;s site ↗
+            {t("match.apply")} ↗
           </a>
         </div>
       </div>
@@ -82,10 +92,9 @@ export default async function MatchDetailPage({
       />
 
       <section>
-        <h2 className="text-lg font-medium">Requirement by requirement</h2>
+        <h2 className="text-lg font-medium">{t("match.requirements")}</h2>
         <p className="mb-4 mt-1 text-sm text-[var(--color-ink-soft)]">
-          Each line below is a requirement from the posting, with the sentence from your CV that
-          answered it.
+          {t("match.requirementsIntro")}
         </p>
         <EvidencePanel requirements={match.requirements} />
       </section>
@@ -93,13 +102,11 @@ export default async function MatchDetailPage({
       <ScoreBreakdown subscores={match.subscores} contributions={match.contributions} />
 
       <section className="rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] p-5">
-        <h2 className="text-sm font-medium">From the posting</h2>
+        <h2 className="text-sm font-medium">{t("match.fromPosting")}</h2>
         <p className="mt-2 whitespace-pre-line text-sm text-[var(--color-ink-soft)]">
           {match.excerpt}…
         </p>
-        <p className="mt-3 text-xs text-[var(--color-ink-soft)]">
-          An excerpt only. Read the full description on the employer&apos;s page.
-        </p>
+        <p className="mt-3 text-xs text-[var(--color-ink-soft)]">{t("match.excerptNote")}</p>
       </section>
     </div>
   );

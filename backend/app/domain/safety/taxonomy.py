@@ -27,7 +27,7 @@ from enum import StrEnum
 
 from rapidfuzz import fuzz, process
 
-from app.domain.jobs.normalize import normalize_arabic
+from app.domain.text.arabic import normalize_arabic, segment_scripts
 
 MIN_FUZZY_LENGTH = 5
 """Below this, fuzzy matching is noise: 'go' is one edit from ' go' and 'god'."""
@@ -84,6 +84,9 @@ def normalize_token(token: str) -> str:
     """
     text = unicodedata.normalize("NFKC", token)
     text = normalize_arabic(text)
+    # "وPython" is "and Python": the clitic has to come off before the token is
+    # looked up, or every skill a conjunction touches resolves as unmapped.
+    text = segment_scripts(text)
     text = text.casefold()
     text = _TRAILING_NOISE.sub(" ", text)
     text = _PUNCT.sub(" ", text)

@@ -1,6 +1,6 @@
 # Handoff — 9 September 2026
 
-Phases 0 through 4 are built, verified and pushed to
+Phases 0 through 5 are built, verified and pushed to
 `https://github.com/AHMED-METAWEA/CareerPilot.ai`. Everything below is the state
 you are resuming from.
 
@@ -8,8 +8,8 @@ you are resuming from.
 
 ```
 backend:  ruff · ruff format · mypy strict · import-linter (2 contracts) · alembic check
-          523 tests passing (298 unit, 225 integration + eval)
-frontend: tsc --noEmit · next lint · next build (23 routes)
+          592 tests passing
+frontend: tsc --noEmit · next lint · next build (25 routes)
 ```
 
 ## What each phase left behind
@@ -29,6 +29,12 @@ frontend: tsc --noEmit · next lint · next build (23 routes)
   gap analysis with learning steps, interview preparation from the posting's own
   requirements. The `/matches/[id]/prepare` page is where a candidate meets all
   four.
+- **Phase 5 — bilingual.** One text fold shared by dedup, the taxonomy and the
+  diff; Arabic CV structure, seniority and experience extraction; the Arabic UI
+  locale (stored per account, RTL verified end to end); and a four-cell
+  cross-lingual evaluation matrix. Fixed a real bug: `Python وKafka` did not
+  contain `Kafka` to a word-boundary match, so the diff refused truthful Arabic
+  cover letters.
 
 ## Two things are deliberately still red
 
@@ -42,17 +48,32 @@ the decomposition and what would settle it.
 **The golden set (§9.1).** The tooling is built; the labels are human work and
 have not been done. Every ranking number in the docs is therefore provisional.
 
-## To pick Phase 5 up
+**The Arabic split has nothing to measure.** `careerpilot eval languages` reports
+zero Arabic postings in a corpus of 15,594. The Phase 5 exit criterion is
+neither met nor missed, and the fix is board curation rather than code — see the
+last paragraph of this file.
 
-Phase 5 is the bilingual pipeline: Arabic CV parsing, mixed-script
-normalisation, a dedicated Arabic evaluation split, and an Arabic UI locale.
-Its exit criterion is NDCG@10 on the Arabic split within 5 points of the English
-split — which cannot be measured until the golden set has labels, so expect to
-build the split and the harness before the number means anything.
+## To pick Phase 6 up
 
-The normalisation half already exists (`normalize_arabic`, used by the diff and
-the taxonomy), and the anti-invention diff has an Arabic test. What is missing
-is the parsing, the split, and the locale.
+Phase 6 is personalisation: learning from a candidate's own saves and dismissals
+(§13), within the constraint of ADR 0004 — no outcome-based learning-to-rank,
+because the labels are sparse, censored, delayed and confounded. The engagement
+events it needs are already being recorded (`user_job_events`, with
+`clock_timestamp()` ordering).
+
+Before that, two things would pay for themselves:
+
+1. **MENA board curation.** Everything bilingual is built and none of it can be
+   measured. Collecting real Egyptian and Gulf careers-page tokens is the single
+   highest-value non-code task in the project.
+2. **Golden-set labelling.** Five CVs × 60 postings against the rubric in
+   `careerpilot eval rubric`. Until it exists, no ranking number in these docs
+   means anything.
+
+What Phase 5 left translated: the chrome, the shortlist, the match detail page,
+the preparation page and settings. Onboarding, register/login and the
+applications list are still English-only; a missing key falls back to English
+rather than to a blank, so nothing breaks — it just is not translated yet.
 
 ## Environment
 

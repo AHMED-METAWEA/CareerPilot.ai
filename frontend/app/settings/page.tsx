@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { api, isSignedIn } from "@/lib/api";
+import { currentLocale, translator, type Locale } from "@/lib/i18n";
 
 type Consents = {
   active: string[];
@@ -35,17 +36,32 @@ export default async function SettingsPage({
 }) {
   if (!(await isSignedIn())) redirect("/login");
   const { notice } = await searchParams;
-  const consents = await api<Consents>("/api/v1/me/consents");
+  const [consents, locale] = await Promise.all([
+    api<Consents>("/api/v1/me/consents"),
+    currentLocale(),
+  ]);
+  const t = translator(locale);
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
-      <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">{t("settings.title")}</h1>
 
       {notice ? (
         <p className="rounded-md border border-[var(--color-line)] bg-[var(--color-surface)] p-3 text-sm">
           {notice}
         </p>
       ) : null}
+
+      <section>
+        <h2 className="text-sm font-medium">{t("settings.language")}</h2>
+        <p className="mt-1 text-sm text-[var(--color-ink-soft)]">{t("settings.languageDetail")}</p>
+        <form action="/api/preferences" method="post" className="mt-3 flex items-center gap-3">
+          <LanguageChoice current={locale} />
+          <button className="rounded-md border border-[var(--color-line)] px-3 py-1.5 text-sm">
+            {t("settings.save")}
+          </button>
+        </form>
+      </section>
 
       <section>
         <h2 className="text-sm font-medium">What you have agreed to</h2>
@@ -135,5 +151,24 @@ export default async function SettingsPage({
         </ul>
       </section>
     </div>
+  );
+}
+
+/** Radio buttons rather than a select: two options, both worth reading. */
+function LanguageChoice({ current }: { current: Locale }) {
+  return (
+    <span className="flex gap-4 text-sm">
+      {(
+        [
+          ["en", "English"],
+          ["ar", "العربية"],
+        ] as const
+      ).map(([value, label]) => (
+        <label key={value} className="flex items-center gap-1.5">
+          <input type="radio" name="locale" value={value} defaultChecked={current === value} />
+          <span lang={value}>{label}</span>
+        </label>
+      ))}
+    </span>
   );
 }

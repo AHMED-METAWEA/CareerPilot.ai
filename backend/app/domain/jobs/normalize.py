@@ -16,40 +16,23 @@ from datetime import UTC, datetime
 from dateutil import parser as date_parser
 
 from app.domain.models import EmploymentType, JobLocation, RemoteType, Seniority
+from app.domain.text.arabic import (
+    ARABIC_RANGE,
+    detect_employment_type,
+    detect_language,
+    detect_remote_type,
+    detect_seniority,
+    normalize_arabic,
+)
+
+__all__ = ["detect_language", "normalize_arabic"]
 
 # ── Script and language ───────────────────────────────────────────────
-
-_ARABIC_RANGE = re.compile(r"[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]")
-_LATIN_RANGE = re.compile(r"[A-Za-z]")
-_TASHKEEL = re.compile(r"[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]")
-
-
-def detect_language(text: str) -> str:
-    """Return 'ar' or 'en' by script share.
-
-    Deliberately crude: the pipeline needs to know which analyser and which
-    prompt language to use, not to identify Catalan. Mixed-script postings are
-    common in MENA listings, so the threshold is a share, not a presence test.
-    """
-    if not text:
-        return "en"
-    sample = text[:4000]
-    arabic = len(_ARABIC_RANGE.findall(sample))
-    latin = len(_LATIN_RANGE.findall(sample))
-    if arabic == 0:
-        return "en"
-    return "ar" if arabic / max(arabic + latin, 1) > 0.20 else "en"
-
-
-def normalize_arabic(text: str) -> str:
-    """Fold the orthographic variation that makes Arabic strings compare badly."""
-    text = _TASHKEEL.sub("", text)
-    text = text.replace("ـ", "")  # tatweel
-    text = re.sub(r"[آأإٱ]", "ا", text)  # alef variants
-    text = text.replace("ى", "ي")  # alef maqsura -> ya
-    text = text.replace("ة", "ه")  # ta marbuta -> ha
-    return text
-
+#
+# Re-exported from `app.domain.text.arabic`, which owns them as of Phase 5.
+# One implementation: dedup, the taxonomy and the anti-invention diff all fold
+# text before comparing it, and folding it two slightly different ways is how a
+# skill matches in one place and not in another.
 
 # ── HTML ──────────────────────────────────────────────────────────────
 
@@ -129,7 +112,7 @@ def normalize_title(title: str) -> str:
     if not title:
         return ""
     text = unicodedata.normalize("NFKC", title)
-    if _ARABIC_RANGE.search(text):
+    if ARABIC_RANGE.search(text):
         text = normalize_arabic(text)
     text = text.casefold()
     for pattern in _TITLE_NOISE:
@@ -180,11 +163,22 @@ def infer_seniority(title: str, description: str = "") -> Seniority | None:
     for pattern, level in _SENIORITY_PATTERNS:
         if pattern.search(title):
             return level
+
+    # Arabic titles second, and only where the Latin patterns found nothing: a
+    # MENA posting is usually "Senior مهندس بيانات" or the reverse, and the
+    # English word is the more specific signal when both are present.
+    arabic_level = detect_seniority(title)
+    if arabic_level:
+        return Seniority(arabic_level)
+
     if description:
         head = description[:600]
         for pattern, level in _SENIORITY_PATTERNS:
             if pattern.search(head):
                 return level
+        arabic_level = detect_seniority(head)
+        if arabic_level:
+            return Seniority(arabic_level)
     return None
 
 
@@ -206,7 +200,8 @@ def infer_remote_type(*fields: str | None) -> RemoteType | None:
         return RemoteType.REMOTE
     if _ONSITE.search(blob):
         return RemoteType.ONSITE
-    return None
+    arabic = detect_remote_type(blob)
+    return RemoteType(arabic) if arabic else None
 
 
 _EMPLOYMENT_MAP: tuple[tuple[re.Pattern[str], EmploymentType], ...] = (
@@ -224,7 +219,8 @@ def parse_employment_type(value: str | None) -> EmploymentType | None:
     for pattern, kind in _EMPLOYMENT_MAP:
         if pattern.search(value):
             return kind
-    return EmploymentType.OTHER
+    arabic = detect_employment_type(value)
+    return EmploymentType(arabic) if arabic else EmploymentType.OTHER
 
 
 # ── Locations ─────────────────────────────────────────────────────────

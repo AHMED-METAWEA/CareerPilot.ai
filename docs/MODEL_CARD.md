@@ -83,6 +83,31 @@ Both figures are for the mechanism, not for a model. The diff does not depend on
 which provider produced the text, and text that fails it is never shown — so the
 failure mode is a refusal, not a plausible fabrication.
 
+## Bilingual behaviour (Phase 5)
+
+Arabic and English are handled in one pipeline rather than two. Text is folded
+identically wherever it is compared — dedup, taxonomy resolution, the
+anti-invention diff — so a skill that matches in one component matches in all of
+them.
+
+| Behaviour | Status |
+|---|---|
+| Arabic CV section, seniority and experience extraction | Built, unit-tested |
+| Mixed-script clitic segmentation (`وKafka` → `Kafka`) | Built, unit-tested |
+| Arabic UI locale, stored per account, RTL | Built, verified end to end |
+| NDCG@10 on the Arabic split | **Not measurable** — no Arabic postings in the corpus |
+
+The last row is the important one. The Phase 5 exit criterion is a comparison
+between two numbers and only one of them exists, so the criterion is neither met
+nor missed. Nothing in this system reports a bilingual ranking quality figure,
+because there is no evidence for one.
+
+**Known limitation.** CV character-yield thresholds are calibrated on English.
+Arabic expresses the same content in fewer characters, so an ordinary Arabic CV
+can draw a "thinner than typical" warning it does not deserve. No correction has
+been applied, because a guessed constant would be indistinguishable from a
+measured one later.
+
 ## Data
 
 Job postings from employer ATS public APIs (see

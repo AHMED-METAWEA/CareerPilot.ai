@@ -224,6 +224,34 @@ them).
   questions come from the requirements this posting actually stated, each shown
   with the requirement it came from and the candidate's own evidence for it.
 
+### Phase 5 — the bilingual pipeline
+
+- **One fold, applied everywhere text is compared.** Bidi controls and
+  zero-width characters are stripped, Arabic-Indic digits become ASCII, and
+  orthographic variants (أ إ آ / ة ه / ى ي) collapse. Dedup, the taxonomy and
+  the anti-invention diff all now fold identically — folding two slightly
+  different ways is how a skill matches in one place and not in another.
+- **A real bug this found:** Arabic attaches its conjunction to the following
+  word with no space, so a CV reading `Python وKafka` did not contain `Kafka` to
+  a word-boundary match. The anti-invention diff read Kafka as absent and
+  refused a cover letter that was telling the truth. Script segmentation opens
+  that boundary; the diff still catches invention in Arabic, and there is a test
+  for each half.
+- **Arabic CVs are read as CVs.** Section headings, seniority, remote and
+  employment vocabulary, and years of experience written in digits or words
+  (including the dual form `سنتين`, which is "two years" with no unit word for a
+  number-then-unit rule to find). An Arabic CV with a `المهارات` heading used to
+  score as though it had no skills section.
+- **The Arabic UI locale** is stored on the account, not in a cookie, so it
+  follows the candidate between devices. `dir="rtl"` on `<html>` plus logical CSS
+  properties mirrors the whole tree without a single RTL branch in a component.
+- **Cross-lingual evaluation** reports four cells (en→en, en→ar, ar→en, ar→ar)
+  and refuses to publish a number for a split with fewer than 20 labelled pairs.
+  Run `careerpilot eval languages`: the corpus currently holds **zero** Arabic
+  postings, so the Phase 5 exit criterion is neither met nor missed. That is a
+  board-curation gap, and [EVALUATION.md](docs/EVALUATION.md) says so rather
+  than reporting a number that would look like a pass.
+
 ## Development
 
 ```bash

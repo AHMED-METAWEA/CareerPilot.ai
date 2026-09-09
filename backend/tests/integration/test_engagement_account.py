@@ -472,3 +472,49 @@ def test_export_downloads_as_a_file(
     assert response.status_code == 200
     assert "attachment" in response.headers["content-disposition"]
     assert response.json()["account"]["user_id"]
+
+
+# ── interface language (§18, Phase 5) ─────────────────────────────────
+
+
+def test_the_account_reports_its_locale_and_the_supported_set(
+    client: TestClient, account: tuple[uuid.UUID, str, dict[str, str]]
+) -> None:
+    _, email, headers = account
+    response = client.get("/api/v1/me", headers=headers)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["email"] == email
+    assert body["locale"] == "en"
+    assert body["supported_locales"] == ["en", "ar"]
+
+
+def test_the_locale_is_stored_on_the_account_not_in_a_cookie(
+    client: TestClient, account: tuple[uuid.UUID, str, dict[str, str]]
+) -> None:
+    """So it follows the candidate to their phone (§18, Phase 5)."""
+    _, _, headers = account
+
+    assert client.patch("/api/v1/me", json={"locale": "ar"}, headers=headers).status_code == 200
+    assert client.get("/api/v1/me", headers=headers).json()["locale"] == "ar"
+
+    # A fresh sign-in — a different session entirely — sees the same preference.
+    assert client.patch("/api/v1/me", json={"locale": "en"}, headers=headers).status_code == 200
+    assert client.get("/api/v1/me", headers=headers).json()["locale"] == "en"
+
+
+def test_an_unsupported_locale_is_refused(
+    client: TestClient, account: tuple[uuid.UUID, str, dict[str, str]]
+) -> None:
+    """Rejected rather than stored and silently ignored at render time."""
+    _, _, headers = account
+    response = client.patch("/api/v1/me", json={"locale": "fr"}, headers=headers)
+
+    assert response.status_code == 422
+    assert client.get("/api/v1/me", headers=headers).json()["locale"] == "en"
+
+
+def test_the_account_endpoints_require_a_token(client: TestClient) -> None:
+    assert client.get("/api/v1/me").status_code == 401
+    assert client.patch("/api/v1/me", json={"locale": "ar"}).status_code == 401

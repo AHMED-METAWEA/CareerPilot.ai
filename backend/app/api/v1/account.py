@@ -25,10 +25,55 @@ class ConsentRequest(BaseModel):
     granted: bool
 
 
+SUPPORTED_LOCALES = ("en", "ar")
+
+
+class PreferencesRequest(BaseModel):
+    locale: Literal["en", "ar"]
+
+
 class DeleteRequest(BaseModel):
     confirm_email: str
     """Typing the address is the confirmation. Deletion is not undoable after
     the retention window, and a misplaced click should not trigger it."""
+
+
+@router.get("")
+def read_me(
+    user: Annotated[CurrentUser, Depends(current_user)],
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    """The caller's own account row — identity and preferences, nothing derived."""
+    row = session.execute(
+        text("SELECT email, locale, created_at FROM users WHERE id = :id"),
+        {"id": user.user_id},
+    ).one()
+    return {
+        "user_id": str(user.user_id),
+        "email": row.email,
+        "locale": row.locale,
+        "created_at": row.created_at.isoformat(),
+        "supported_locales": list(SUPPORTED_LOCALES),
+    }
+
+
+@router.patch("")
+def update_preferences(
+    payload: PreferencesRequest,
+    user: Annotated[CurrentUser, Depends(current_user)],
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    """Set the interface language (§18, Phase 5).
+
+    Stored on the account rather than in a cookie: a candidate who reads Arabic
+    reads Arabic on their phone too, and a preference that does not follow them
+    is a preference they have to set again on every device.
+    """
+    session.execute(
+        text("UPDATE users SET locale = :locale WHERE id = :id"),
+        {"locale": payload.locale, "id": user.user_id},
+    )
+    return {"locale": payload.locale}
 
 
 @router.get("/export")

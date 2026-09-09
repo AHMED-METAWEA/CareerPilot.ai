@@ -233,6 +233,8 @@ def _report(report: Any) -> dict[str, Any]:
         "sections_missing": list(report.sections_missing),
         "layout_damage": report.layout_damage,
         "page_count": report.page_count,
+        "language": report.language,
+        "is_mixed_script": report.is_mixed_script,
         "findings": [
             {
                 "code": finding.code,

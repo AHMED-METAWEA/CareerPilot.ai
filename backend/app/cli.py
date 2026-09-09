@@ -335,12 +335,73 @@ def eval_run(
     )
     typer.echo(report.markdown_table())
 
+    if report.cross_lingual is not None:
+        typer.echo("\nBy language (§18, Phase 5):\n")
+        typer.echo(report.cross_lingual.markdown_table())
+
     headline = report.headline
     if headline is not None and fail_on_regression:
         ok, message = check_regression(headline.metrics.ndcg_at_10, previous, tolerance=max_drop)
         typer.echo(f"\n{message}")
         if not ok:
             raise typer.Exit(code=1)
+
+
+@eval_app.command("languages")
+def eval_languages() -> None:
+    """Report the language make-up of the corpus and the golden set (§18, Phase 5).
+
+    Runs no matching, so it is the cheap way to see whether the Arabic split can
+    be measured at all before spending an hour on the harness.
+    """
+    from sqlalchemy import text as sql
+
+    from app.eval.golden import load_labels
+    from app.eval.splits import (
+        MIN_PAIRS_FOR_A_NUMBER,
+        posting_languages,
+        profile_languages,
+    )
+
+    with session_scope() as session:
+        postings = posting_languages(session)
+        profiles = profile_languages(session)
+        labels = load_labels(session)
+        stored: dict[str, int] = {
+            str(row[0]): int(row[1])
+            for row in session.execute(
+                sql(
+                    "SELECT COALESCE(language, 'unset'), count(*) FROM job_postings "
+                    "GROUP BY 1 ORDER BY 2 DESC"
+                )
+            ).all()
+        }
+
+    typer.echo("Corpus")
+    for language, count in sorted(stored.items(), key=lambda item: -item[1]):
+        typer.echo(f"  {language:>5}: {count}")
+
+    arabic_postings = sum(1 for language in postings.values() if language == "ar")
+    typer.echo(f"  detected Arabic (including unset rows): {arabic_postings}")
+
+    typer.echo("\nProfiles")
+    for language in ("en", "ar"):
+        typer.echo(f"  {language:>5}: {sum(1 for v in profiles.values() if v == language)}")
+
+    typer.echo("\nLabelled pairs by cell")
+    cells: dict[str, int] = {}
+    for profile_id, pairs in labels.items():
+        cv_language = profiles.get(profile_id, "en")
+        for posting_id in pairs:
+            cell = f"{cv_language}\u2192{postings.get(posting_id, 'en')}"
+            cells[cell] = cells.get(cell, 0) + 1
+
+    if not cells:
+        typer.echo("  none — the golden set is human work (\u00a79.1)")
+    for cell in ("en\u2192en", "en\u2192ar", "ar\u2192en", "ar\u2192ar"):
+        count = cells.get(cell, 0)
+        mark = "measurable" if count >= MIN_PAIRS_FOR_A_NUMBER else "not enough to measure"
+        typer.echo(f"  {cell}: {count} ({mark})")
 
 
 @eval_app.command("controls")

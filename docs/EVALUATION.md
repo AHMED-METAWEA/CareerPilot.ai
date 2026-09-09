@@ -222,6 +222,58 @@ Requirement expansion is now alternation-aware: conjunctions split ("SQL **and**
 PostgreSQL" is two things to know), alternations group, and a missing
 alternation reports as `Python (or Java, Go)` so the gap names the options.
 
+### Cross-lingual splits — built, and not yet measurable
+
+Phase 5's exit criterion is NDCG@10 on the Arabic split within 5 points of the
+English split. The harness now computes a four-cell language matrix — en→en,
+en→ar, ar→en, ar→ar — from the shipping configuration, and `careerpilot eval
+languages` reports the make-up of the corpus and the golden set without running
+a match.
+
+Running it today gives a flat answer:
+
+```
+Corpus
+     en: 15594
+  detected Arabic (including unset rows): 0
+
+Labelled pairs by cell
+  none — the golden set is human work (§9.1)
+```
+
+**There are no Arabic postings in the corpus at all.** Not few — none. The
+bilingual pipeline is built and unit-tested, and there is nothing in the
+database for it to be measured on. That is a sourcing gap, not a code gap: 137
+of the 141 validated boards are global or EU, one is Egyptian, three are wider
+MENA, and guessed ATS tokens do not find MENA employers. The Arabic split
+therefore reports `None` rather than a number, and the exit criterion is
+**neither met nor missed**.
+
+Two decisions were made deliberately here, both of which would have been easier
+to fudge:
+
+* A split with fewer than 20 labelled pairs reports "not enough to measure"
+  rather than an NDCG. A metric over a handful of pairs is noise wearing the
+  costume of a measurement, and it would have let the criterion "pass".
+* The cross-lingual cells (ar→en, en→ar) are reported separately from ar→ar. A
+  system can score well on ar→ar by being a competent Arabic keyword matcher
+  while failing completely at the shared-semantic-space claim in §1.5. Pooling
+  them would hide exactly the failure the phase exists to detect.
+
+### Known limitation — character yield is calibrated on English
+
+`CHARS_PER_PAGE_GOOD` (1500) and `CHARS_PER_PAGE_POOR` (400) were set from
+English CVs. Arabic writes the same content in fewer characters — short words,
+unwritten short vowels — so a normal Arabic CV sits lower on this scale than an
+equivalent English one and can draw a "thinner than a typical CV" warning it
+does not deserve.
+
+No correction factor has been applied, because there is no measurement to base
+one on and a guessed constant would be indistinguishable from a real
+calibration six months from now. What is needed is the character yield of
+twenty or so real Arabic CVs. Until then the thresholds stand and this
+paragraph is the disclosure.
+
 ### Still to measure
 
 - Dedup precision and recall on 200 hand-labelled pairs (Phase 2)
