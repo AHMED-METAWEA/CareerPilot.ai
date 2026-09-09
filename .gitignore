@@ -220,3 +220,14 @@ __marimo__/
 # ── CareerPilot ──────────────────────────────────────────────────────
 # Local model weights, downloaded corpora and the operator's .env.
 
+
+# ── CareerPilot ──────────────────────────────────────────────────────
+# The GitHub Python template covers .venv, .env and the tooling caches.
+# These are the rest: the Next.js frontend (Phase 3), macOS cruft, local
+# model weights, and any corpus dump an operator takes.
+node_modules/
+.next/
+.DS_Store
+models/
+data/
+*.log
