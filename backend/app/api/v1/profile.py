@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
+import structlog
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -23,6 +24,7 @@ from app.api.deps import current_user_id, get_session
 from app.config import AppConfig, get_config, get_settings
 from app.services.profiling import CvUnreadableError, ProfilingService
 
+log = structlog.get_logger(__name__)
 router = APIRouter(tags=["profile"])
 
 
@@ -106,7 +108,16 @@ def build_profile(
     try:
         result = _service(session, get_config()).build_profile(user_id, cv_version_id)
     except LLMError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        # The candidate is not the right audience for a provider's connection
+        # error. Their CV is stored and readable; what failed is ours to fix.
+        log.error("profile.extraction_unavailable", error=str(exc))
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Your CV was stored and read successfully, but profile extraction is "
+                "temporarily unavailable. Nothing was lost — try again shortly."
+            ),
+        ) from exc
 
     return {
         "profile_id": str(result.profile_id),

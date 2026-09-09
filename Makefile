@@ -44,6 +44,15 @@ stats: ## Corpus statistics against the Phase 0 exit criteria
 validate-boards: ## Probe every curated board and report what it returns
 	cd $(BACKEND) && .venv/bin/python -m app.cli boards validate
 
+web-setup: ## Install frontend dependencies
+	cd frontend && npm install
+
+web: ## Run the web client (expects the API on :8000)
+	cd frontend && npm run dev
+
+web-check: ## Type-check, lint and build the web client
+	cd frontend && npm run typecheck && npm run lint && npm run build
+
 test: ## Full test suite
 	cd $(BACKEND) && .venv/bin/pytest -q
 
@@ -62,7 +71,9 @@ typecheck: ## mypy strict
 imports: ## Import-discipline contracts (§14.1)
 	cd $(BACKEND) && .venv/bin/lint-imports
 
-check: lint typecheck imports test ## Everything CI runs
+check: lint typecheck imports test ## Everything CI runs for the backend
+
+check-all: check web-check ## Backend and web client
 
 clean:
 	find . -name __pycache__ -type d -prune -exec rm -rf {} + ; rm -rf $(BACKEND)/.pytest_cache $(BACKEND)/.mypy_cache $(BACKEND)/.ruff_cache

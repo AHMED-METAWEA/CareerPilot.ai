@@ -25,7 +25,7 @@ references throughout the code point at it.
 431 tests, 86% coverage. `make check` runs everything CI does.
 | **1 — Matching core** | CV ingestion, grounded profile extraction, gates, hybrid retrieval, rerank, decomposed scoring, apply-URL verification | **built** |
 | **2 — Evaluation** | Metrics, ablation runner, negative controls, CI regression gate | **built** — golden set is human work, see below |
-| **3 — Product (backend)** | JWT auth with rotating refresh tokens, engagement tracking, duplicate-application guard, digest, export and erasure | **built** — Next.js UI still to come |
+| **3 — Product** | JWT auth, engagement tracking, duplicate-application guard, digest, export and erasure, and the Next.js client | **built** |
 | 4–6 | Candidate tooling · bilingual pipeline · personalisation | not started |
 
 ### Phase 0 against its exit criteria (§18)
@@ -125,6 +125,13 @@ or the API:
 make api            # http://localhost:8000/health · /docs
 ```
 
+And the web client:
+
+```bash
+make web-setup      # npm install, once
+make web            # http://localhost:3000
+```
+
 ### Curating boards
 
 Every source is a database row, and the reviewable truth is
@@ -184,6 +191,10 @@ them).
   a deletion that destroys the CV text and every session immediately, then drops
   the rest after 30 days. The audit row outlives the account, which is what
   makes a deletion demonstrable afterwards.
+- **The web client**: onboarding with the parseability report, the shortlist,
+  the evidence view, the withheld list with reasons, application tracking and
+  the consent/export/delete settings. Tokens live in httpOnly cookies set by
+  route handlers, so the browser never holds one.
 - **The digest** (§11.7): five matches, one reason each, drawn from the stored
   explanation so it says what the match detail says. Consent is checked at send
   time, nothing already sent is sent again, and nothing goes out when there is
