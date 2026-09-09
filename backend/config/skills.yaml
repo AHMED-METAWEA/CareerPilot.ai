@@ -1,0 +1,301 @@
+# Seed skill taxonomy (§11.1 step 9, §10.2).
+#
+# Curated data, reviewed as data. Extracted tokens must resolve here or they are
+# recorded as `unmapped` and queued — never invented into a canonical skill.
+#
+# Arabic aliases are first-class: "تعلم الآلة" and "machine learning" are one
+# skill, and only a curated alias can say so. This is a starter vocabulary for
+# software, data and ML roles; `GET /admin/skills/unmapped` shows what to add.
+
+- name: Python
+  kind: language
+  aliases: [python3, py, بايثون]
+- name: JavaScript
+  kind: language
+  aliases: [js, ecmascript, جافاسكريبت]
+- name: TypeScript
+  kind: language
+  aliases: [ts, تايب سكريبت]
+- name: Java
+  kind: language
+  aliases: [java se, java ee, جافا]
+- name: C#
+  kind: language
+  aliases: [csharp, "c sharp", dotnet c#]
+- name: C++
+  kind: language
+  aliases: [cpp, cplusplus, "c plus plus"]
+- name: Go
+  kind: language
+  aliases: [golang, لغة جو]
+- name: Rust
+  kind: language
+  aliases: [rust-lang]
+- name: PHP
+  kind: language
+  aliases: [php8, php7]
+- name: Ruby
+  kind: language
+  aliases: [ruby lang]
+- name: Kotlin
+  kind: language
+  aliases: []
+- name: Swift
+  kind: language
+  aliases: []
+- name: Scala
+  kind: language
+  aliases: []
+- name: R
+  kind: language
+  aliases: [r language, r-lang]
+- name: SQL
+  kind: language
+  aliases: [structured query language, اس كيو ال]
+- name: Bash
+  kind: language
+  aliases: [shell scripting, shell, zsh]
+
+- name: Django
+  kind: framework
+  aliases: [django rest framework, drf]
+- name: Flask
+  kind: framework
+  aliases: []
+- name: FastAPI
+  kind: framework
+  aliases: [fast api]
+- name: React
+  kind: framework
+  aliases: [reactjs, "react.js"]
+- name: Next.js
+  kind: framework
+  aliases: [nextjs, next]
+- name: Vue.js
+  kind: framework
+  aliases: [vuejs, vue]
+- name: Angular
+  kind: framework
+  aliases: [angularjs]
+- name: Node.js
+  kind: framework
+  aliases: [nodejs, node]
+- name: Express.js
+  kind: framework
+  aliases: [expressjs, express]
+- name: Spring Boot
+  kind: framework
+  aliases: [spring, springboot]
+- name: .NET
+  kind: framework
+  aliases: [dotnet, "asp.net", "net core"]
+- name: Laravel
+  kind: framework
+  aliases: []
+- name: Rails
+  kind: framework
+  aliases: [ruby on rails, ror]
+- name: React Native
+  kind: framework
+  aliases: [reactnative]
+- name: Flutter
+  kind: framework
+  aliases: []
+
+- name: PostgreSQL
+  kind: tool
+  aliases: [postgres, psql, بوستجرس]
+- name: MySQL
+  kind: tool
+  aliases: [mariadb, ماي سكويل]
+- name: MongoDB
+  kind: tool
+  aliases: [mongo]
+- name: Redis
+  kind: tool
+  aliases: []
+- name: Elasticsearch
+  kind: tool
+  aliases: [elastic search, opensearch]
+- name: Snowflake
+  kind: tool
+  aliases: []
+- name: BigQuery
+  kind: tool
+  aliases: [google bigquery]
+- name: Apache Spark
+  kind: tool
+  aliases: [spark, pyspark]
+- name: Apache Kafka
+  kind: tool
+  aliases: [kafka]
+- name: Apache Airflow
+  kind: tool
+  aliases: [airflow]
+- name: dbt
+  kind: tool
+  aliases: [data build tool]
+- name: Docker
+  kind: tool
+  aliases: [containers, دوكر]
+- name: Kubernetes
+  kind: tool
+  aliases: [k8s, kubernets, كوبرنيتس]
+- name: Terraform
+  kind: tool
+  aliases: [hashicorp terraform, iac]
+- name: Git
+  kind: tool
+  aliases: [github, gitlab, version control, جيت]
+- name: Jenkins
+  kind: tool
+  aliases: []
+- name: GitHub Actions
+  kind: tool
+  aliases: [gh actions]
+- name: Linux
+  kind: tool
+  aliases: [unix, ubuntu, لينكس]
+- name: AWS
+  kind: tool
+  aliases: [amazon web services, ec2, s3, lambda]
+- name: Azure
+  kind: tool
+  aliases: [microsoft azure]
+- name: Google Cloud
+  kind: tool
+  aliases: [gcp, google cloud platform]
+- name: Tableau
+  kind: tool
+  aliases: []
+- name: Power BI
+  kind: tool
+  aliases: [powerbi, microsoft power bi]
+- name: Excel
+  kind: tool
+  aliases: [microsoft excel, spreadsheets, اكسل]
+- name: Jira
+  kind: tool
+  aliases: [atlassian jira]
+- name: Figma
+  kind: tool
+  aliases: []
+- name: pandas
+  kind: tool
+  aliases: [python pandas]
+- name: NumPy
+  kind: tool
+  aliases: [numpy]
+- name: scikit-learn
+  kind: tool
+  aliases: [sklearn, scikit learn]
+- name: PyTorch
+  kind: tool
+  aliases: [torch]
+- name: TensorFlow
+  kind: tool
+  aliases: [tf, keras]
+- name: Hugging Face
+  kind: tool
+  aliases: [huggingface, transformers]
+- name: LangChain
+  kind: tool
+  aliases: []
+- name: Grafana
+  kind: tool
+  aliases: []
+- name: Prometheus
+  kind: tool
+  aliases: []
+- name: Sentry
+  kind: tool
+  aliases: []
+- name: Postman
+  kind: tool
+  aliases: []
+
+- name: Machine Learning
+  kind: domain
+  aliases: [ml, تعلم الآلة, التعلم الالي]
+- name: Deep Learning
+  kind: domain
+  aliases: [neural networks, التعلم العميق]
+- name: Natural Language Processing
+  kind: domain
+  aliases: [nlp, معالجة اللغة الطبيعية]
+- name: Computer Vision
+  kind: domain
+  aliases: [cv vision, image processing, الرؤية الحاسوبية]
+- name: Data Engineering
+  kind: domain
+  aliases: [etl, elt, data pipelines, هندسة البيانات]
+- name: Data Analysis
+  kind: domain
+  aliases: [data analytics, business intelligence, bi, تحليل البيانات]
+- name: Data Science
+  kind: domain
+  aliases: [علم البيانات]
+- name: MLOps
+  kind: domain
+  aliases: [ml engineering, model deployment]
+- name: DevOps
+  kind: domain
+  aliases: [sre, site reliability, ديف اوبس]
+- name: Backend Development
+  kind: domain
+  aliases: [backend, server side, تطوير الواجهة الخلفية]
+- name: Frontend Development
+  kind: domain
+  aliases: [frontend, client side, تطوير الواجهة الأمامية]
+- name: Full Stack Development
+  kind: domain
+  aliases: [fullstack, full-stack]
+- name: Mobile Development
+  kind: domain
+  aliases: [ios development, android development, تطوير التطبيقات]
+- name: Cloud Architecture
+  kind: domain
+  aliases: [cloud computing, الحوسبة السحابية]
+- name: Cybersecurity
+  kind: domain
+  aliases: [information security, infosec, الأمن السيبراني]
+- name: QA Engineering
+  kind: domain
+  aliases: [quality assurance, test automation, اختبار البرمجيات]
+- name: Product Management
+  kind: domain
+  aliases: [إدارة المنتج]
+- name: UX Design
+  kind: domain
+  aliases: [user experience, ui/ux, تصميم تجربة المستخدم]
+- name: Microservices
+  kind: domain
+  aliases: [distributed systems, الخدمات المصغرة]
+- name: REST APIs
+  kind: domain
+  aliases: [rest, restful, api design]
+- name: GraphQL
+  kind: domain
+  aliases: []
+- name: System Design
+  kind: domain
+  aliases: [software architecture, تصميم الأنظمة]
+- name: Statistics
+  kind: domain
+  aliases: [statistical analysis, الإحصاء]
+
+- name: Communication
+  kind: soft
+  aliases: [التواصل]
+- name: Teamwork
+  kind: soft
+  aliases: [collaboration, العمل الجماعي]
+- name: Problem Solving
+  kind: soft
+  aliases: [analytical thinking, حل المشكلات]
+- name: Leadership
+  kind: soft
+  aliases: [team leadership, mentoring, القيادة]
+- name: Project Management
+  kind: soft
+  aliases: [agile, scrum, إدارة المشاريع]

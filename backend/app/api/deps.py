@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import secrets
+import uuid
 from collections.abc import Iterator
+from typing import Annotated
 
-from fastapi import Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -23,6 +26,38 @@ def get_session() -> Iterator[Session]:
         raise
     finally:
         session.close()
+
+
+def current_user_id(
+    x_user_id: Annotated[uuid.UUID | None, Header()] = None,
+    session: Session = Depends(get_session),
+) -> uuid.UUID:
+    """Resolve the acting user.
+
+    Phase 1 has no authentication: the plan puts multi-user auth in Phase 3
+    (§18), and inventing a half-authentication now would be worse than having
+    none — it would look like a security boundary without being one. The header
+    is validated against the users table so a request cannot act as a user that
+    does not exist, and `require_real_auth` refuses to serve this path in
+    production at all.
+    """
+    settings = get_settings()
+    if settings.careerpilot_env == "production":
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="Authentication arrives in Phase 3; these endpoints are not production-ready",
+        )
+    if x_user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="X-User-Id header is required until authentication ships (Phase 3)",
+        )
+    exists = session.execute(
+        text("SELECT 1 FROM users WHERE id = :id AND deleted_at IS NULL"), {"id": x_user_id}
+    ).first()
+    if not exists:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unknown user")
+    return x_user_id
 
 
 def require_admin(x_admin_token: str | None = Header(default=None)) -> None:

@@ -118,12 +118,15 @@ def test_syndicated_copies_land_in_one_group(db_session: Session) -> None:
     ats = make_source(db_session, "greenhouse:acme")
     aggregator = make_source(db_session, "remotive", tier=2)
     native = make_posting(db_session, ats, company, external_id="1")
+    # A realistic syndication edit: the aggregator appends a short line. Larger
+    # edits are a documented miss at the configured threshold — see
+    # test_dedup_calibration.py.
     copy = make_posting(
         db_session,
         aggregator,
         company,
         external_id="1",
-        body=BODY + " Apply via our partner site. No agencies.",
+        body=BODY + "\nNo agencies.",
         url="https://remotive.com/jobs/1",
         native=False,
     )

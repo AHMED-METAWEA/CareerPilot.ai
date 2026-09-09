@@ -20,10 +20,10 @@ references throughout the code point at it.
 
 | Phase | Scope | State |
 |---|---|---|
-| **0 — Data spine** | Schema, six ATS adapters, normalisation, five-stage dedup, company resolution, discovery worker | **built** — 198 tests, 141 validated boards |
-| 1 — Matching core | CV ingestion, profile extraction, embeddings, gates, hybrid retrieval, rerank, scoring | not started |
+| **0 — Data spine** | Schema, six ATS adapters, normalisation, five-stage dedup, company resolution, discovery worker | **built** — 141 validated boards |
+| **1 — Matching core** | CV ingestion, grounded profile extraction, gates, hybrid retrieval, rerank, decomposed scoring, apply-URL verification | **built** — 343 tests, 88% coverage |
 | 2 — Evaluation | Golden set, NDCG/MRR/P@5, ablation study, CI regression gate | not started |
-| 3 — Product | Multi-user auth, URL verification worker, Next.js UI, digest, export/delete | not started |
+| 3 — Product | Multi-user auth, Next.js UI, digest, export/delete (URL verification landed early — Phase 1's gates need it) | not started |
 | 4–6 | Candidate tooling · bilingual pipeline · personalisation | not started |
 
 ### Phase 0 against its exit criteria (§18)
@@ -40,6 +40,40 @@ Measured on a real corpus built from the committed board registry:
 `careerpilot stats` re-checks these at any time, and adds two guards that came
 out of real failures: `suspected_false_merges` and `ambiguous_apply_urls`
 (see [EVALUATION.md](docs/EVALUATION.md)).
+
+### Phase 1 — what a match now consists of
+
+```
+CV → text extraction → parse-quality gate → PII redaction → schema-constrained
+     extraction → span verification → taxonomy resolution → profile
+
+profile → eligibility gates → BM25 ∪ vector → RRF → cross-encoder → top 25
+        → requirement extraction → per-requirement alignment → decomposed score
+```
+
+Every claim in a match is traceable: a requirement cites the CV bullet that
+answered it, a skill cites the characters in the CV that evidenced it, and the
+score decomposes into the five named terms of §8.2. Scores are presented as a
+percentile within the candidate's own pool and never as a probability of any
+outcome.
+
+Extraction is grounded by construction: the model returns a quote with every
+field, the code verifies the quote exists in the document, and fields that fail
+are discarded rather than surfaced. Skills must resolve to the curated
+vocabulary in `backend/config/skills.yaml`; unresolvable tokens go to a review
+queue instead of becoming skills.
+
+**Running without model weights.** The embedding and reranker backends sit
+behind protocols, with a deterministic lexical implementation used when the
+`[ml]` extra is not installed. The whole pipeline runs, and `job_embeddings.model`
+records which backend produced every vector, so development vectors can never be
+mistaken for real ones. Install the extra to swap in
+`multilingual-e5-small` and `bge-reranker-base`; nothing else changes.
+
+**Running without an inference key.** Requirement extraction falls back to a
+deterministic path (bullet segmentation plus must-have language), which is also
+the baseline the §9.3 ablation measures the model against. Set `GROQ_API_KEY`
+to use the model path.
 
 ## Architecture
 

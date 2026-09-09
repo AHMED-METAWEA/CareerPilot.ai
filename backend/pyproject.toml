@@ -20,14 +20,18 @@ dependencies = [
   "apscheduler>=3.10",
   "python-dateutil>=2.9",
   "typer>=0.15",
+  "pdfplumber>=0.11",
+  "python-docx>=1.1",
+  "python-multipart>=0.0.9",   # CV file uploads
 ]
 
 [project.optional-dependencies]
-# Heavy local-model stack. Not needed for Phase 0 (data spine).
+# Heavy local-model stack. The domain talks to the EmbeddingBackend and
+# Reranker protocols, so everything else works without it; installing this
+# extra swaps the deterministic development backend for the real models.
 ml = [
   "sentence-transformers>=3.3",
   "torch>=2.5",
-  "numpy>=2.1",
 ]
 dev = [
   "pytest>=8.3",
@@ -74,7 +78,13 @@ disallow_untyped_defs = true
 exclude = ["app/db/migrations/versions/"]
 
 [[tool.mypy.overrides]]
-module = ["pgvector.*", "apscheduler.*", "rapidfuzz.*"]
+module = ["pgvector.*", "apscheduler.*", "rapidfuzz.*", "pdfplumber.*", "docx.*"]
+ignore_missing_imports = true
+
+# Optional [ml] extra: type checking must pass without the 2.5 GB stack
+# installed, which is the whole point of keeping it optional.
+[[tool.mypy.overrides]]
+module = ["sentence_transformers.*", "torch.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

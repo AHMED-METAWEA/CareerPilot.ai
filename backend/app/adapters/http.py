@@ -145,6 +145,7 @@ class HttpClient:
         rate_limit_rpm: int = 20,
         headers: dict[str, str] | None = None,
         params: dict[str, Any] | None = None,
+        json: Any | None = None,
         conditional: ConditionalState | None = None,
     ) -> httpx.Response:
         host = urlsplit(url).hostname or "unknown"
@@ -158,7 +159,9 @@ class HttpClient:
             self._consume_rpm(budget_key, rate_limit_rpm)
             self._throttle.wait(host)
             try:
-                response = self._client.request(method, url, headers=merged, params=params)
+                response = self._client.request(
+                    method, url, headers=merged, params=params, json=json
+                )
             except httpx.HTTPError as exc:  # transport-level
                 last_error = exc
                 log.warning("http.transport_error", url=url, attempt=attempt, error=str(exc))

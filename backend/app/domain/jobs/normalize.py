@@ -65,13 +65,29 @@ _TRAILING_SPACE = re.compile(r"[ \t]+(\n)")
 def html_to_text(html: str) -> str:
     """Flatten a job description to plain text, preserving list and block breaks.
 
-    ATS descriptions are HTML fragments of wildly varying quality. A parser
-    dependency buys little here and costs a wheel on ARM; the structure that
-    matters for requirement extraction is the line break.
+    Order matters, and getting it wrong is invisible: Greenhouse returns its
+    `content` field **entity-encoded** (`&lt;p&gt;`), so unescaping after tag
+    stripping leaves literal markup in the text. That pollutes SimHash,
+    embeddings and requirement extraction at once, and looks like a formatting
+    quirk rather than a bug. Unescape first, then strip.
+
+    A second unescape pass follows, for entities that were only single-encoded
+    (`R&amp;D`) and for the double-encoded case some ATSs produce.
+
+    A parser dependency buys little here and costs a wheel on ARM; the structure
+    that matters for requirement extraction is the line break.
     """
     if not html:
         return ""
-    text = _SCRIPT_STYLE.sub(" ", html)
+
+    text = html
+    for _ in range(2):
+        unescaped = html_lib.unescape(text)
+        if unescaped == text:
+            break
+        text = unescaped
+
+    text = _SCRIPT_STYLE.sub(" ", text)
     text = _BR.sub("\n", text)
     text = _LI.sub("\n• ", text)
     text = _BLOCK_END.sub("\n", text)

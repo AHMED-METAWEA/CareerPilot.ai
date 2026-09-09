@@ -52,29 +52,42 @@ drop of more than 2 points in NDCG@10.
 
 ### Deduplication — SimHash calibration
 
-Six real ATS descriptions, 5.3k–9.6k characters, Hamming distance over 64-bit
-SimHash of word 5-gram shingles. Reproduced by
+**Corrected 9 September 2026.** The first calibration was measured on
+descriptions that still contained HTML markup — Greenhouse returns its `content`
+field entity-encoded, and `html_to_text` unescaped *after* stripping tags, so
+every Greenhouse description carried literal markup. Shared boilerplate tags
+inflated similarity and made the numbers look better than they were. The bug is
+fixed, the corpus was rebuilt by replaying stored raw payloads, and these are
+the numbers on clean text.
+
+Seven real ATS descriptions (mean 6,000 characters), Hamming distance over
+64-bit SimHash of word 5-gram shingles. Reproduced by
 `backend/tests/integration/test_dedup_calibration.py`.
 
-| Transformation | Distance |
+| Comparison | Distance |
 |---|---|
-| Same posting + syndication trailer | 0–2 |
-| Same posting, one paragraph dropped | 0–4 |
-| Same posting, whitespace normalised | 0 |
-| Same posting, 15% of tail truncated | 5–11 |
-| Two different postings | 10–38 |
+| Same posting, lightly edited (trailer added, paragraph dropped, whitespace normalised) | 0–8, median 2 |
+| Same posting, 15% of the tail truncated | 5–11 |
+| Two different postings | 10–30, median 30 |
 
-**Conclusion.** The configured threshold of 3 catches lightly-edited
-syndication and rejects unrelated postings with a clear margin. It deliberately
-does not stretch to cover truncated copies, which overlap the unrelated range —
-those are caught by the exact-key, canonical-URL and title-blocking stages,
-which do not degrade with document length.
+**What this says about the configured threshold of 3.** It catches roughly
+two-thirds of light edits and keeps seven bits of margin to the nearest
+unrelated pair. Raising it to 8 would catch every light edit in this sample and
+leave two bits of margin — not a margin at all when the target is 0.95
+precision and a false merge silently corrupts two employers' data.
 
-**Also measured:** the distance depends on the *share* of the document that
-changed, not the word count. On a 60-word stub, the same trailer that moves a
-full description by 1 bit moves the hash by 7. Clustering therefore does not
-trust SimHash below `MIN_SIMHASH_CHARS` (400) and falls back to exact
-normalised-title matching within an already company-blocked bucket.
+The threshold stays at the plan's value. Seven documents is not enough evidence
+to retune a specification, and Phase 2's 200 hand-labelled dedup pairs (§9.2)
+are what should settle it. What the measurement does establish is the shape of
+the trade-off, and that the misses are real: light edits beyond the threshold
+are caught, if at all, by the exact-key, canonical-URL and title-blocking
+stages, which do not degrade with length.
+
+**Also measured:** distance tracks the *share* of the document that changed, not
+the word count. On a 60-word stub the same trailer that moves a full description
+by 1 bit moves it by 7. Clustering therefore does not trust SimHash below
+`MIN_SIMHASH_CHARS` (400) and falls back to exact normalised-title matching
+within an already company-blocked bucket.
 
 ### Deduplication — false-merge guards
 
@@ -128,6 +141,30 @@ postings is ignored for merging, both within a batch and corpus-wide, and
 and used it as an identity. Both produced output that looked correct from every
 angle except the one that mattered. Neither would have been caught by a unit
 test written from the specification — only by running the thing and looking.
+
+### Text extraction — a bug the corpus itself revealed
+
+`html_to_text` unescaped HTML entities *after* stripping tags. Greenhouse
+returns entity-encoded content, so markup survived into `description_text` for
+every Greenhouse posting — polluting SimHash, embeddings and requirement
+extraction at once, and looking like a formatting quirk rather than a defect.
+
+Found by reading the stored text of a posting that scored well and had no
+extractable requirements. Fixed by unescaping first; the whole corpus (15,594
+postings) was rebuilt by replaying `raw_payloads`, with no re-fetching and no
+errors — which is what persisting payloads verbatim is for (§11.2 step 3).
+
+### Scoring — unparseable postings scored as perfect matches
+
+A posting whose requirements could not be extracted received `skill_coverage`
+and `requirement_alignment` of 1.0 — 60% of the total weight — for telling us
+nothing, and outranked postings we could actually assess.
+
+Fixed by renormalising: terms that could not be computed are dropped and the
+remaining weights rescaled, so an unassessable posting competes only on the
+terms that were measurable. The affected match reports say so explicitly
+("No skill requirements could be extracted from this posting") rather than
+showing "0/0 requirements matched", which reads as a failed match.
 
 ### Still to measure
 

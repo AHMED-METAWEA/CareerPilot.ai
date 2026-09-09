@@ -7,6 +7,11 @@ from app.workers.tasks.discover import (  # noqa: F401
     run_fetch_details,
     run_prune_raw,
 )
+from app.workers.tasks.matching import (  # noqa: F401
+    run_embed,
+    run_match_users,
+    run_verify_urls,
+)
 from app.workers.tasks.registry import HANDLERS, TaskContext
 
-__all__ = ["HANDLERS", "TaskContext", "run_deduplicate", "run_discover"]
+__all__ = ["HANDLERS", "TaskContext"]

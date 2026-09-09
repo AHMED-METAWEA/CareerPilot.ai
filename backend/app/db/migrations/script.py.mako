@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+import pgvector.sqlalchemy  # noqa: F401  (autogenerate emits halfvec columns)
 import sqlalchemy as sa
 from alembic import op
 ${imports if imports else ""}

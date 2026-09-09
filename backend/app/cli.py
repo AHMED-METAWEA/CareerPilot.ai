@@ -116,6 +116,22 @@ def sources_run(name: str) -> None:
     )
 
 
+@app.command("skills-sync")
+def skills_sync(
+    path: Path = typer.Option(BASE_DIR / "config" / "skills.yaml", "--file"),
+) -> None:
+    """Load the seed skill taxonomy into the database (§10.2)."""
+    from app.services.taxonomy import load_seed, sync_skills
+
+    entries = load_seed(path)
+    with session_scope() as session:
+        report = sync_skills(session, entries)
+    typer.echo(
+        f"{len(entries)} skills: {report.skills_created} created, "
+        f"{report.skills_existing} existing, {report.aliases_created} new aliases"
+    )
+
+
 @app.command("stats")
 def stats() -> None:
     """Corpus statistics against the Phase 0 exit criteria."""
@@ -139,6 +155,46 @@ def stats() -> None:
     typer.echo("")
     for label, passed in checks:
         typer.echo(f"  [{'x' if passed else ' '}] {label}")
+
+
+@sources_app.command("renormalize")
+def sources_renormalize(
+    name: str | None = typer.Option(None, "--source", help="One source; default is all"),
+    batch: int = typer.Option(2000, help="Payloads to replay per source"),
+) -> None:
+    """Re-derive postings from stored raw payloads, fetching nothing.
+
+    Run this after changing an adapter or a shared normaliser: the payloads were
+    persisted verbatim precisely so that a normalisation bug costs a replay
+    rather than a re-fetch.
+    """
+    with session_scope() as session:
+        query = "SELECT id, name FROM job_sources"
+        params: dict[str, object] = {}
+        if name:
+            query += " WHERE name = :name"
+            params["name"] = name
+        sources = session.execute(text(query), params).all()
+
+    http = _http()
+    replayed = updated = errors = 0
+    try:
+        for source in sources:
+            with session_scope() as session:
+                report = IngestionService(session, http, get_config()).renormalize_source(
+                    source.id, batch=batch
+                )
+            replayed += report.fetched
+            updated += report.updated
+            errors += report.errors
+            if report.fetched:
+                typer.echo(f"  {source.name}: replayed {report.fetched}, errors {report.errors}")
+    finally:
+        http.close()
+    typer.echo(
+        f"replayed {replayed} payloads across {len(sources)} sources "
+        f"({updated} postings updated, {errors} errors)"
+    )
 
 
 @app.command("redo-dedup")

@@ -48,6 +48,18 @@ def problem(
 def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(StarletteHTTPException)
     async def http_exception(_: Request, exc: StarletteHTTPException) -> JSONResponse:
+        # A structured detail becomes problem-document extension members rather
+        # than a stringified dict: RFC 7807 exists so an error can carry data a
+        # client acts on, and a parseability report is exactly that.
+        if isinstance(exc.detail, dict):
+            detail = dict(exc.detail)
+            title = str(detail.pop("message", None) or "Request failed")
+            return problem(
+                exc.status_code,
+                title=title,
+                type_=f"{PROBLEM_BASE}/http-{exc.status_code}",
+                **detail,
+            )
         return problem(
             exc.status_code,
             title=str(exc.detail),

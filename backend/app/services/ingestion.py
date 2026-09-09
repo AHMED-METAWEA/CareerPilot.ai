@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import uuid
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -29,7 +30,7 @@ from app.adapters.sources import build_adapter
 from app.adapters.sources.base import BaseSourceAdapter
 from app.config import AppConfig
 from app.db.queue import TaskType, enqueue
-from app.domain.models import NormalizedJob
+from app.domain.models import NormalizedJob, RawJob
 from app.services.companies import CompanyDirectory
 
 log = structlog.get_logger(__name__)
@@ -106,6 +107,80 @@ class IngestionService:
         report.status = self._assess_run(source, report)
         self._finish_run(report)
         self._record_success(source.id)
+        return report
+
+    def renormalize_source(self, source_id: uuid.UUID, *, batch: int = 500) -> RunReport:
+        """Re-run normalisation over stored payloads, without fetching anything.
+
+        This is what persisting `raw_payloads` verbatim buys (§11.2 step 3): a
+        normalisation bug is a re-run, not a lost day of data. Used when an
+        adapter or a shared normaliser changes — as when HTML entity decoding
+        was found to run after tag stripping, leaving markup in every Greenhouse
+        description.
+        """
+        source = self._load_source(source_id)
+        adapter = build_adapter(
+            source.adapter,
+            name=source.name,
+            config=source.config,
+            http=self.http,
+            rate_limit_rpm=source.rate_limit_rpm,
+        )
+        report = RunReport(source_id=source.id, source_name=source.name, run_id=None)
+        directory = CompanyDirectory.load(self.session)
+
+        rows = self.session.execute(
+            text(
+                """
+                SELECT DISTINCT ON (external_id) external_id, payload
+                  FROM raw_payloads
+                 WHERE source_id = :source_id
+                 ORDER BY external_id, fetched_at DESC
+                 LIMIT :limit
+                """
+            ),
+            {"source_id": source.id, "limit": batch},
+        ).all()
+
+        for row in rows:
+            report.fetched += 1
+            raw = RawJob(
+                source_name=source.name,
+                external_id=row.external_id,
+                payload=row.payload,
+                fetched_at=datetime.now(UTC),
+            )
+            try:
+                normalized = adapter.normalize(raw)
+            except Exception as exc:
+                report.errors += 1
+                log.warning(
+                    "renormalize.failed",
+                    source=source.name,
+                    external_id=row.external_id,
+                    error=f"{type(exc).__name__}: {exc}",
+                )
+                continue
+
+            company_id, _ = directory.resolve_or_create(
+                normalized.company,
+                source_id=source.id,
+                fuzzy_threshold=self.config.dedup.company_fuzzy_threshold,
+                review_threshold=self.config.dedup.company_review_threshold,
+            )
+            posting_id, inserted = self._upsert_posting(source.id, company_id, normalized)
+            report.changed_posting_ids.append(posting_id)
+            report.new += int(inserted)
+            report.updated += int(not inserted)
+
+        report.status = "ok"
+        log.info(
+            "renormalize.completed",
+            source=source.name,
+            replayed=report.fetched,
+            updated=report.updated,
+            errors=report.errors,
+        )
         return report
 
     # ── the run itself ───────────────────────────────────────────────

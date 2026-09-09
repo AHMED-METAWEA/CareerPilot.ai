@@ -155,6 +155,45 @@ class Worker:
             coalesce=True,
             max_instances=1,
         )
+        # Embedding keeps the vector half of retrieval usable; batched rather
+        # than per-posting so a burst of discovery does not become a burst of
+        # model calls (§13).
+        self._scheduler.add_job(
+            self._scheduled(
+                lambda session: enqueue(session, TaskType.EMBED, dedup_key="embed", priority=2)
+            ),
+            "interval",
+            minutes=15,
+            id="embed",
+            coalesce=True,
+            max_instances=1,
+        )
+        # Every 12 hours, oldest first. Postings unverified for 48 hours are
+        # suppressed from display, so this is what keeps the corpus visible.
+        self._scheduler.add_job(
+            self._scheduled(
+                lambda session: enqueue(
+                    session, TaskType.VERIFY_URLS, dedup_key="verify_urls", priority=4
+                )
+            ),
+            "interval",
+            hours=12,
+            id="verify_urls",
+            coalesce=True,
+            max_instances=1,
+        )
+        # Nightly at 02:00, staggered per profile by the task itself.
+        self._scheduler.add_job(
+            self._scheduled(
+                lambda session: enqueue(
+                    session, TaskType.MATCH_USERS, dedup_key="match_users", priority=6
+                )
+            ),
+            "cron",
+            hour=2,
+            minute=0,
+            id="match_users",
+        )
         self._scheduler.add_job(
             self._scheduled(
                 lambda session: enqueue(

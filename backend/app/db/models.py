@@ -142,6 +142,57 @@ class CandidateProfile(Base):
     extracted_at: Mapped[datetime] = _now()
 
 
+class ProfileBullet(Base):
+    """One CV bullet, with its span and its sentence-level vector (§7.2).
+
+    Document-level similarity saturates: two engineering CVs look alike because
+    both are engineering CVs. Requirement-level alignment needs the individual
+    bullet, and the bullet that matched is also the evidence shown to the user.
+    """
+
+    __tablename__ = "profile_bullets"
+    __table_args__ = (
+        Index("ix_profile_bullets_profile", "profile_id"),
+        Index(
+            "profile_bullet_vec_idx",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_with={"m": 16, "ef_construction": 64},
+            postgresql_ops={"embedding": "halfvec_cosine_ops"},
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = _pk()
+    profile_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("candidate_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
+    text_: Mapped[str] = mapped_column("text", Text, nullable=False)
+    span: Mapped[Any | None] = mapped_column(INT4RANGE)
+    section: Mapped[str | None] = mapped_column(Text)
+    model: Mapped[str | None] = mapped_column(Text)
+    embedding: Mapped[Any | None] = mapped_column(HALFVEC(EMBEDDING_DIM))
+    created_at: Mapped[datetime] = _now()
+
+
+class ProfileEmbedding(Base):
+    """Whole-profile vector, for stage 3 retrieval."""
+
+    __tablename__ = "profile_embeddings"
+
+    profile_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("candidate_profiles.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    model: Mapped[str] = mapped_column(Text, nullable=False)
+    dim: Mapped[int] = mapped_column(Integer, nullable=False)
+    embedding: Mapped[Any] = mapped_column(HALFVEC(EMBEDDING_DIM), nullable=False)
+    created_at: Mapped[datetime] = _now()
+
+
 class ProfileSkill(Base):
     __tablename__ = "profile_skills"
 
@@ -423,6 +474,7 @@ class JobPosting(Base):
 
 class JobRequirement(Base):
     __tablename__ = "job_requirements"
+    __table_args__ = (Index("ix_job_requirements_posting", "posting_id"),)
 
     id: Mapped[uuid.UUID] = _pk()
     posting_id: Mapped[uuid.UUID] = mapped_column(
@@ -435,6 +487,10 @@ class JobRequirement(Base):
     )
     skill_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("skills.id"))
     span: Mapped[Any] = mapped_column(INT4RANGE, nullable=False)
+    model: Mapped[str | None] = mapped_column(Text)
+    embedding: Mapped[Any | None] = mapped_column(HALFVEC(EMBEDDING_DIM))
+    """Sentence-level vector for this requirement (§7.2), for per-requirement
+    alignment. Nullable until the embed worker reaches it."""
 
 
 class JobEmbedding(Base):
@@ -493,6 +549,9 @@ class Match(Base):
     subscores: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     rank: Mapped[int | None] = mapped_column(Integer)
     model_version: Mapped[str] = mapped_column(Text, nullable=False)
+    explanation: Mapped[str | None] = mapped_column(Text)
+    """Prose assembled from the fact bundle, never from the model's own memory (§10.4)."""
+    gaps: Mapped[list[str] | None] = mapped_column(ARRAY(Text))
     computed_at: Mapped[datetime] = _now()
 
 

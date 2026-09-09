@@ -240,3 +240,88 @@ class CompanyResolution(BaseModel):
     method: CompanyMatchMethod
     needs_review: bool = False
     matched_alias: str | None = None
+
+
+# ── Matching projections (§8) ─────────────────────────────────────────
+#
+# What the gates and the scorer actually need from a profile and a posting.
+# Deliberately narrow: the domain cannot reach for a database row, so anything
+# missing here is a decision about what matching is allowed to consider.
+
+
+class WorkAuthorization(BaseModel):
+    """What the candidate may do in one country, and on what basis."""
+
+    model_config = ConfigDict(frozen=True)
+
+    country: str = Field(description="ISO 3166-1 alpha-2, uppercase")
+    status: Literal["citizen", "permanent_resident", "work_visa", "requires_sponsorship", "none"]
+
+    @property
+    def is_authorized(self) -> bool:
+        return self.status in {"citizen", "permanent_resident", "work_visa"}
+
+
+class LanguageAbility(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    language: str
+    cefr: Literal["A1", "A2", "B1", "B2", "C1", "C2", "native"] | None = None
+
+    @property
+    def level(self) -> int:
+        order = {"A1": 1, "A2": 2, "B1": 3, "B2": 4, "C1": 5, "C2": 6, "native": 7}
+        return order.get(self.cefr or "", 0)
+
+
+class CandidateSnapshot(BaseModel):
+    """The profile as the matcher sees it."""
+
+    model_config = ConfigDict(frozen=True)
+
+    profile_id: str
+    years_experience: float | None = None
+    seniority_level: Seniority | None = None
+    locations: tuple[str, ...] = ()
+    """Declared commutable set, free text as the candidate wrote it."""
+    countries: tuple[str, ...] = ()
+    """ISO codes derived from `locations`, for the location gate."""
+    open_to_remote: bool = True
+    work_authorization: tuple[WorkAuthorization, ...] = ()
+    languages: tuple[LanguageAbility, ...] = ()
+    skills: frozenset[str] = frozenset()
+    """Canonical skill names. Resolution happened during profile construction."""
+    bullets: tuple[str, ...] = ()
+    """CV bullets, for requirement-level alignment."""
+
+
+class PostingRequirement(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    text: str
+    kind: Literal["skill", "experience", "education", "auth", "language"] = "skill"
+    is_must_have: bool = False
+    skill: str | None = None
+    """Canonical skill name, when the requirement resolved to one."""
+
+
+class PostingSnapshot(BaseModel):
+    """The posting as the matcher sees it."""
+
+    model_config = ConfigDict(frozen=True)
+
+    posting_id: str
+    title: str
+    seniority_level: Seniority | None = None
+    remote_type: RemoteType | None = None
+    countries: tuple[str, ...] = ()
+    cities: tuple[str, ...] = ()
+    posted_at: datetime | None = None
+    url_status: UrlStatus = UrlStatus.UNKNOWN
+    last_verified_at: datetime | None = None
+    min_years: float | None = None
+    """A hard minimum stated by the posting, not inferred from its title."""
+    requires_authorization_in: tuple[str, ...] = ()
+    offers_sponsorship: bool | None = None
+    required_languages: tuple[LanguageAbility, ...] = ()
+    requirements: tuple[PostingRequirement, ...] = ()
