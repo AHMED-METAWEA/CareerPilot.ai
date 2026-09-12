@@ -420,6 +420,52 @@ def eval_controls() -> None:
         raise typer.Exit(code=1)
 
 
+@app.command("personalise")
+def personalise(
+    user: str = typer.Option(..., "--user", help="User id, or 'all'"),
+) -> None:
+    """Fit and validate per-user scoring weights (§11.8, Phase 6).
+
+    Most runs will decline to apply anything, and that is the system working:
+    a fit has to beat the default weighting on the user's own labelled matches
+    before it is allowed to change their list.
+    """
+    import uuid as _uuid
+
+    from sqlalchemy import text as _text
+
+    from app.services.personalisation import PersonalisationService
+
+    with session_scope() as session:
+        if user == "all":
+            user_ids = [
+                row.id
+                for row in session.execute(
+                    _text("SELECT id FROM users WHERE deleted_at IS NULL ORDER BY created_at")
+                ).all()
+            ]
+        else:
+            user_ids = [_uuid.UUID(user)]
+
+        service = PersonalisationService(session)
+        applied = 0
+        for user_id in user_ids:
+            outcome = service.train(user_id)
+            mark = "APPLIED " if outcome.applied else "declined"
+            typer.echo(f"[{mark}] {user_id}: {outcome.reason}")
+            if outcome.applied and outcome.report is not None:
+                for name, adjustment in sorted(
+                    outcome.report.adjustments.items(),
+                    key=lambda pair: abs(pair[1]),
+                    reverse=True,
+                ):
+                    typer.echo(f"            {name:<24} {adjustment:+.1%}")
+                applied += 1
+
+        if len(user_ids) > 1:
+            typer.echo(f"\n{applied} of {len(user_ids)} users personalised")
+
+
 @app.command("redo-dedup")
 def redo_dedup(
     batch: int = typer.Option(200, help="Postings per queued task"),

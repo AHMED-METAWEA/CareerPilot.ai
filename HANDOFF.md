@@ -1,6 +1,6 @@
-# Handoff — 9 September 2026
+# Handoff — 12 September 2026
 
-Phases 0 through 5 are built, verified and pushed to
+Phases 0 through 6 are built, verified and pushed to
 `https://github.com/AHMED-METAWEA/CareerPilot.ai`. Everything below is the state
 you are resuming from.
 
@@ -8,7 +8,7 @@ you are resuming from.
 
 ```
 backend:  ruff · ruff format · mypy strict · import-linter (2 contracts) · alembic check
-          592 tests passing
+          627 tests passing
 frontend: tsc --noEmit · next lint · next build (25 routes)
 ```
 
@@ -29,12 +29,21 @@ frontend: tsc --noEmit · next lint · next build (25 routes)
   gap analysis with learning steps, interview preparation from the posting's own
   requirements. The `/matches/[id]/prepare` page is where a candidate meets all
   four.
-- **Phase 5 — bilingual.** One text fold shared by dedup, the taxonomy and the
-  diff; Arabic CV structure, seniority and experience extraction; the Arabic UI
-  locale (stored per account, RTL verified end to end); and a four-cell
-  cross-lingual evaluation matrix. Fixed a real bug: `Python وKafka` did not
-  contain `Kafka` to a word-boundary match, so the diff refused truthful Arabic
-  cover letters.
+- **Phase 5 — the bilingual pipeline.** `app/domain/text/arabic.py` owns the
+  fold: bidi strip, Arabic-Indic digits, orthographic variants, and script
+  segmentation. That last one fixed a real bug — Arabic attaches its conjunction
+  to the following word, so a CV reading "Python وKafka" made the anti-invention
+  diff refuse a truthful letter mentioning Kafka. Arabic section headings,
+  seniority, remote and employment vocabulary all land in the same closed sets
+  the English path uses.
+- **Phase 6 — personalisation.** A logistic model over the five sub-scores,
+  fitted per user with rank as a discarded control for position bias. All three
+  §11.8 constraints are mechanical: 200+ deliberate events (views excluded —
+  training on them closes a loop around the system's own output), weights bounded
+  to ±40% and projected back onto the simplex, and a fit applied *only* after it
+  beats the defaults on that user's own labelled matches. Rejected fits are
+  stored with their reason. `GET /api/v1/me/personalisation` shows the candidate
+  the coefficients and both NDCG figures; `DELETE` turns it off.
 
 ## Two things are deliberately still red
 

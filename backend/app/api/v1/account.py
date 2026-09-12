@@ -179,3 +179,89 @@ def delete_account(
             "in which an accidental deletion can still be reversed."
         ),
     }
+
+
+@router.get("/personalisation")
+def read_personalisation(
+    user: Annotated[CurrentUser, Depends(current_user)],
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    """How this account's ranking is weighted, and why (§11.8).
+
+    §11.8's first constraint is interpretable coefficients. That is only worth
+    anything if the person can see them, so this returns the whole picture —
+    the weights in use, the adjustment each term received, and the two NDCG
+    figures that decided whether the fit was applied at all.
+    """
+    from app.domain.scoring.preferences import MIN_EVENTS
+    from app.services.personalisation import PersonalisationService
+
+    service = PersonalisationService(session)
+    stored = service.explain(user.user_id)
+
+    events = session.execute(
+        text(
+            "SELECT count(*) FROM user_job_events "
+            "WHERE user_id = :user_id AND event IN ('saved','dismissed','applied')"
+        ),
+        {"user_id": user.user_id},
+    ).scalar_one()
+
+    if stored is None:
+        return {
+            "active": False,
+            "events": events,
+            "events_required": MIN_EVENTS,
+            "explanation": (
+                f"Your list uses the standard weighting. Personalisation is considered "
+                f"once you have {MIN_EVENTS} saves, dismissals or applications — you have "
+                f"{events} — and is only applied if it measurably improves your own results."
+            ),
+        }
+
+    return {
+        "active": stored["active"],
+        "events": events,
+        "events_required": MIN_EVENTS,
+        "weights": stored["weights"],
+        "adjustments": stored["adjustments"],
+        "coefficients": stored["coefficients"],
+        "ndcg_default": stored["ndcg_default"],
+        "ndcg_personalised": stored["ndcg_personalised"],
+        "trained_at": stored["trained_at"],
+        "rejected_reason": stored["rejected_reason"],
+        "explanation": (
+            "Your list is weighted toward what you engage with. No term moves more than "
+            "40% from its default, and this weighting was only applied because it scored "
+            "better than the default on your own graded matches."
+            if stored["active"]
+            else (
+                "Your list uses the standard weighting. "
+                f"{stored['rejected_reason'] or 'A personalised weighting did not improve it.'}"
+            )
+        ),
+    }
+
+
+@router.delete("/personalisation", status_code=status.HTTP_200_OK)
+def disable_personalisation(
+    user: Annotated[CurrentUser, Depends(current_user)],
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    """Return this account to the standard weighting.
+
+    A ranking that changed for reasons the candidate did not choose needs an off
+    switch. The row is kept rather than deleted, so the decision stays visible.
+    """
+    from app.services.personalisation import PersonalisationService
+
+    changed = PersonalisationService(session).deactivate(user.user_id)
+    return {
+        "active": False,
+        "changed": changed,
+        "message": (
+            "Your list is back to the standard weighting."
+            if changed
+            else "Your list was already using the standard weighting."
+        ),
+    }

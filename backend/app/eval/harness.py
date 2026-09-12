@@ -45,13 +45,25 @@ log = structlog.get_logger(__name__)
 REGRESSION_TOLERANCE = 2.0
 """Points of NDCG@10. §9.6: a larger drop fails the build."""
 
+# Personalisation is off in every configuration: an ablation answers "does this
+# component earn its place in the pipeline", and a per-user weighting that only
+# some users have would make the answer depend on who was sampled (§9.3).
 ABLATION_CONFIGURATIONS: tuple[PipelineSettings, ...] = (
     PipelineSettings(
-        use_lexical=False, use_rerank=False, use_gates=False, use_decomposed_scoring=False
+        use_lexical=False,
+        use_rerank=False,
+        use_gates=False,
+        use_decomposed_scoring=False,
+        use_personalisation=False,
     ),
-    PipelineSettings(use_rerank=False, use_gates=False, use_decomposed_scoring=False),
-    PipelineSettings(use_gates=False, use_decomposed_scoring=False),
-    PipelineSettings(),
+    PipelineSettings(
+        use_rerank=False,
+        use_gates=False,
+        use_decomposed_scoring=False,
+        use_personalisation=False,
+    ),
+    PipelineSettings(use_gates=False, use_decomposed_scoring=False, use_personalisation=False),
+    PipelineSettings(use_personalisation=False),
 )
 
 

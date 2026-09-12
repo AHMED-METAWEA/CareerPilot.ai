@@ -749,3 +749,36 @@ class TaskQueue(Base):
     last_error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = _now()
     updated_at: Mapped[datetime] = _now()
+
+
+class UserScoreWeights(Base):
+    """Personalised scoring weights for one user (§11.8, Phase 6).
+
+    One row per user, written only after a fit has been *validated* against
+    that user's own labelled subset. The columns exist in the shape they do
+    because §11.8 requires the adjustment to be defensible after the fact:
+    `coefficients` is the interpretable model, `adjustments` is what it did to
+    each weight, and the two NDCG figures are the evidence that it helped.
+
+    `is_active` is separate from the row's existence on purpose. A fit that did
+    not beat the defaults is kept rather than discarded — it is the record of
+    having tried, and it stops the next run from re-deriving the same negative
+    result and calling it new.
+    """
+
+    __tablename__ = "user_score_weights"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    weights: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    coefficients: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    adjustments: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    events_used: Mapped[int] = mapped_column(Integer, nullable=False)
+    ndcg_default: Mapped[float | None] = mapped_column(Numeric(6, 4))
+    ndcg_personalised: Mapped[float | None] = mapped_column(Numeric(6, 4))
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+    """False where the fit did not beat the defaults. The weights are stored
+    either way; only an active row is allowed to change a ranking."""
+    rejected_reason: Mapped[str | None] = mapped_column(Text)
+    trained_at: Mapped[datetime] = _now()

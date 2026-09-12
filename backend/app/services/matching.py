@@ -96,6 +96,9 @@ class PipelineSettings:
     use_decomposed_scoring: bool = True
     """When false, the score is the retrieval/rerank similarity alone — the
     'document cosine only' baseline the plan rejects (§8.1)."""
+    use_personalisation: bool = True
+    """Per-user weights (§11.8). Off in the ablation harness, which must measure
+    the pipeline and not whichever users happen to have earned a fit."""
 
     @property
     def label(self) -> str:
@@ -169,7 +172,9 @@ class MatchingService:
         finalists = self._stage4_rerank(candidate, fused)
         report.finalists = len(finalists)
 
-        scored = self._stage5_analysis(candidate, finalists, eligible, bullets, now, report)
+        scored = self._stage5_analysis(
+            candidate, finalists, eligible, bullets, now, report, user_id=user_id
+        )
         report.persisted = self._persist(user_id, profile_id, scored)
         self._persist_withheld(user_id, profile_id, withheld)
 
@@ -337,6 +342,27 @@ class MatchingService:
         self._rerank_scores = {hit.posting_id: hit.score for hit in hits}
         return [hit.posting_id for hit in hits]
 
+    def _weights_for(self, user_id: uuid.UUID | None) -> ScoreWeights:
+        """The configured weights, or this user's personalised ones (§11.8).
+
+        Personalisation is off unless a fit has been validated against that
+        user's own labels, so the common path returns the configured defaults.
+        The evaluation harness passes no user at all, which keeps an ablation
+        measuring the pipeline rather than whoever happens to be personalised.
+        """
+        defaults = ScoreWeights(**self.config.scoring.weights.model_dump())
+        if user_id is None or not self.pipeline.use_personalisation:
+            return defaults
+
+        from app.services.personalisation import PersonalisationService
+
+        personalised = PersonalisationService(self.session).weights_for(user_id)
+        if personalised is None:
+            return defaults
+
+        log.info("match.personalised_weights", user_id=str(user_id))
+        return personalised
+
     # ── stage 5: analysis and scoring ────────────────────────────────
 
     def _stage5_analysis(
@@ -347,8 +373,10 @@ class MatchingService:
         bullets: list[tuple[str, list[float] | None]],
         now: datetime,
         report: MatchRunReport,
+        *,
+        user_id: uuid.UUID | None = None,
     ) -> list[dict[str, Any]]:
-        weights = ScoreWeights(**self.config.scoring.weights.model_dump())
+        weights = self._weights_for(user_id)
         rerank_pool = [self._rerank_scores.get(posting_id, 0.5) for posting_id in finalists]
         bullet_vectors = [vector for _, vector in bullets if vector is not None]
         bullet_texts = [text_value for text_value, vector in bullets if vector is not None]

@@ -252,6 +252,27 @@ them).
   board-curation gap, and [EVALUATION.md](docs/EVALUATION.md) says so rather
   than reporting a number that would look like a pass.
 
+### Phase 6 — personalisation that has to earn it
+
+- **A logistic model over the five sub-scores**, fitted per user. Five
+  coefficients, each naming a term the evidence view already shows, so a changed
+  list can be explained in the vocabulary it was scored in.
+- **Three gates, all mechanical** (§11.8). Two hundred *deliberate* events —
+  views are excluded, because a view is what the ranking chose to show and
+  training on it closes a loop around the system's own output. Weights bounded
+  to ±40% of their defaults and projected back onto the simplex, so the sum stays
+  1.0 and no single term can take over. And a fit is applied only after it beats
+  the default weighting on that user's own labelled matches.
+- **Most fits will be rejected, and that is the system working.** A rejected fit
+  is stored with its reason rather than discarded, so the next run says "tried,
+  did not help" instead of quietly re-deriving it.
+- **Position bias is controlled, not ignored.** People save what sits near the
+  top because it sits near the top. Rank is fitted as a feature and its
+  coefficient is then discarded, so it absorbs what it can and the sub-score
+  coefficients carry only what is left.
+- `GET /api/v1/me/personalisation` shows the candidate their coefficients, the
+  adjustment each weight received, and both NDCG figures. `DELETE` turns it off.
+
 ## Development
 
 ```bash
