@@ -34,3 +34,215 @@
   rate_limit_rpm: 20
   enabled: true
   tier: 1
+
+# ── Added 2026-09-12 ────────────────────────────────────────────────────
+#
+# Collected by reading tokens off live ATS URLs, not by guessing slugs. That
+# distinction is the whole lesson of this batch: 534 guessed slugs returned 0
+# live boards, and 35 observed tokens returned 31. Lever tokens in particular
+# are case-sensitive — `Bosta` and `Yassir` resolve, `bosta` and `yassir` do not.
+#
+# Staffing and recruitment agencies were probed and deliberately left out, even
+# though several carry hundreds of postings. Their board attributes every role
+# to the agency rather than to the employer, which breaks the one thing the
+# product promises about a posting: that the company named on it is the company
+# hiring, and the apply URL is theirs (§12.7).
+
+# 159 postings at last probe
+- adapter: lever
+  name: lever:Yassir
+  config:
+    company: Yassir
+    company_name: Yassir
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 95 postings at last probe
+- adapter: lever
+  name: lever:aleph
+  config:
+    company: aleph
+    company_name: Aleph
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 545 postings at last probe
+- adapter: lever
+  name: lever:weloglobal
+  config:
+    company: weloglobal
+    company_name: Welo Global
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 14 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:hala
+  config:
+    board_token: hala
+    company_name: HALA
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 2 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:cobblestoneenergy
+  config:
+    board_token: cobblestoneenergy
+    company_name: Cobblestone Energy
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 2 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:cobblestoneenergy4
+  config:
+    board_token: cobblestoneenergy4
+    company_name: Cobblestone Energy
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 3 postings at last probe
+- adapter: ashby
+  name: ashby:leantech
+  config:
+    org: leantech
+    company_name: Lean Technologies
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 4 postings at last probe
+- adapter: ashby
+  name: ashby:syndica
+  config:
+    org: syndica
+    company_name: Syndica
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 41 postings at last probe
+- adapter: workable
+  name: workable:lucidya
+  config:
+    subdomain: lucidya
+    company_name: Lucidya
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 50 postings at last probe
+- adapter: workable
+  name: workable:bayutdubizzle
+  config:
+    subdomain: bayutdubizzle
+    company_name: Bayut | dubizzle
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 276 postings at last probe
+- adapter: workable
+  name: workable:qiddiya-investment-company-1
+  config:
+    subdomain: qiddiya-investment-company-1
+    company_name: Qiddiya Investment Company
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 150 postings at last probe
+- adapter: workable
+  name: workable:sihamco
+  config:
+    subdomain: sihamco
+    company_name: SIHAMCO
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 44 postings at last probe
+- adapter: workable
+  name: workable:bank-of-jordan
+  config:
+    subdomain: bank-of-jordan
+    company_name: Bank of Jordan
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 45 postings at last probe
+- adapter: workable
+  name: workable:ahsproperties
+  config:
+    subdomain: ahsproperties
+    company_name: AHS Properties
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 16 postings at last probe
+- adapter: workable
+  name: workable:careers-sixflags-and-aquarabia
+  config:
+    subdomain: careers-sixflags-and-aquarabia
+    company_name: Six Flags Qiddiya City
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 10 postings at last probe
+- adapter: workable
+  name: workable:careers-imdad
+  config:
+    subdomain: careers-imdad
+    company_name: Imdad
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 7 postings at last probe
+- adapter: workable
+  name: workable:madarplatform
+  config:
+    subdomain: madarplatform
+    company_name: Madar
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 6 postings at last probe
+- adapter: workable
+  name: workable:kaffu-salla
+  config:
+    subdomain: kaffu-salla
+    company_name: Kaffu Salla
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 6 postings at last probe
+- adapter: workable
+  name: workable:abu-dhabi-investment-council
+  config:
+    subdomain: abu-dhabi-investment-council
+    company_name: Abu Dhabi Investment Council
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 6 postings at last probe
+- adapter: workable
+  name: workable:emirates-investment-authority
+  config:
+    subdomain: emirates-investment-authority
+    company_name: Emirates Investment Authority
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 4 postings at last probe
+- adapter: workable
+  name: workable:is
+  config:
+    subdomain: is
+    company_name: Innovative Solutions
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 3 postings at last probe
+- adapter: workable
+  name: workable:pmkconsult
+  config:
+    subdomain: pmkconsult
+    company_name: PMK International Consult
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1

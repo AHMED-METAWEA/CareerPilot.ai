@@ -20,7 +20,7 @@ references throughout the code point at it.
 
 | Phase | Scope | State |
 |---|---|---|
-| **0 — Data spine** | Schema, six ATS adapters, normalisation, five-stage dedup, company resolution, discovery worker | **built** — 141 validated boards |
+| **0 — Data spine** | Schema, six ATS adapters, normalisation, five-stage dedup, company resolution, discovery worker | **built** — 166 validated boards |
 
 431 tests, 86% coverage. `make check` runs everything CI does.
 | **1 — Matching core** | CV ingestion, grounded profile extraction, gates, hybrid retrieval, rerank, decomposed scoring, apply-URL verification | **built** |
@@ -144,14 +144,25 @@ careerpilot boards validate                    # probe the whole registry
 ```
 
 No token in this repository was added without a live response and a non-zero
-posting count behind it: 141 boards survived out of 550 candidates probed, and
-`.github/workflows/boards.yml` re-probes them weekly.
+posting count behind it: 166 boards, and `.github/workflows/boards.yml` re-probes
+them weekly.
 
-Regional coverage is honest about its gap. 137 of the 141 boards are
-global-remote or EU; one is Egyptian and three are wider MENA. That is the
-structural problem §5.5 describes — Wuzzuf, Bayt, Forasna and Tanqeeb publish no
-public API — and closing it is board curation and partnership work, not
-engineering.
+Regional coverage was the honest gap, and closing it taught the lesson that
+belongs here. **Guessing slugs does not work**: 534 plausible MENA tokens —
+`greenhouse:instabug`, `workable:paymob`, `lever:swvl` — returned *zero* live
+boards. Reading tokens off live ATS URLs instead returned 31 of 35. Lever tokens
+are case-sensitive, so `lever:Bosta` resolves where `lever:bosta` does not, which
+is why a whole class of guesses failed silently.
+
+MENA-region boards went from 4 to 29, and MENA-located postings from a handful to
+407. Staffing agencies were probed and deliberately excluded despite carrying
+thousands of postings: their boards attribute every role to the agency rather
+than the employer, which breaks the one thing the product promises about a
+posting (§12.7).
+
+What that curation could not fix is the structural problem §5.5 describes. Wuzzuf,
+Bayt, Forasna and Tanqeeb publish no public API, and MENA employers who *do* use
+international ATS platforms post in English — see below.
 
 ### Phase 2 — measurement, and what it currently says
 

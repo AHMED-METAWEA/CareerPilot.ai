@@ -16,3 +16,44 @@
   rate_limit_rpm: 20
   enabled: true
   tier: 1
+
+# ── Added 2026-09-12 ────────────────────────────────────────────────────
+#
+# Collected by reading tokens off live ATS URLs, not by guessing slugs. That
+# distinction is the whole lesson of this batch: 534 guessed slugs returned 0
+# live boards, and 35 observed tokens returned 31. Lever tokens in particular
+# are case-sensitive — `Bosta` and `Yassir` resolve, `bosta` and `yassir` do not.
+#
+# Staffing and recruitment agencies were probed and deliberately left out, even
+# though several carry hundreds of postings. Their board attributes every role
+# to the agency rather than to the employer, which breaks the one thing the
+# product promises about a posting: that the company named on it is the company
+# hiring, and the apply URL is theirs (§12.7).
+
+# 91 postings at last probe
+- adapter: lever
+  name: lever:Bosta
+  config:
+    company: Bosta
+    company_name: Bosta
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 71 postings at last probe
+- adapter: greenhouse
+  name: greenhouse:decimainternational
+  config:
+    board_token: decimainternational
+    company_name: Decima International
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1
+# 17 postings at last probe
+- adapter: workable
+  name: workable:mylo-btech
+  config:
+    subdomain: mylo-btech
+    company_name: mylo
+  rate_limit_rpm: 20
+  enabled: true
+  tier: 1

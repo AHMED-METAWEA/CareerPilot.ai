@@ -14,8 +14,8 @@ frontend: tsc --noEmit · next lint · next build (25 routes)
 
 ## What each phase left behind
 
-- **Phase 0 — data spine.** 141 validated boards → 15,594 postings (15,067
-  unique), 100% with an ATS-native apply URL. Five-stage dedup, monthly
+- **Phase 0 — data spine.** 166 validated boards → 16,397 open postings, 100%
+  with an ATS-native apply URL. Five-stage dedup, monthly
   partitioned `raw_payloads`, Postgres task queue on `SKIP LOCKED`.
 - **Phase 1 — matching core.** Grounded extraction with verified spans, closed
   taxonomy, RRF fusion over BM25 + pgvector, decomposed scoring behind boolean
@@ -45,7 +45,7 @@ frontend: tsc --noEmit · next lint · next build (25 routes)
   stored with their reason. `GET /api/v1/me/personalisation` shows the candidate
   the coefficients and both NDCG figures; `DELETE` turns it off.
 
-## Two things are deliberately still red
+## Three things are deliberately still red
 
 **Negative controls (§9.4).** Cross-domain separation is 0.077 against a 0.15
 threshold; shuffled pairings 0.041 against 0.10. Diagnosed, not tuned: there is
@@ -54,35 +54,38 @@ running) and the stub profile carries three skills. §9.4 says a failing control
 is not a tuning opportunity, so the thresholds stand. `docs/EVALUATION.md` has
 the decomposition and what would settle it.
 
-**The golden set (§9.1).** The tooling is built; the labels are human work and
-have not been done. Every ranking number in the docs is therefore provisional.
+**The golden set (§9.1).** The tooling, the rubric and the κ ≥ 0.60 agreement
+gate are built; the labels are human work and have not been done. Every ranking
+number in these docs is therefore provisional — including, now, whether Phase
+6's personalisation would ever activate for a real user, since it validates
+against a user's own labelled subset.
 
-**The Arabic split has nothing to measure.** `careerpilot eval languages` reports
-zero Arabic postings in a corpus of 15,594. The Phase 5 exit criterion is
-neither met nor missed, and the fix is board curation rather than code — see the
-last paragraph of this file.
+**The Arabic split has nothing to measure, for a better-understood reason.**
+Board curation was done on 12 September 2026 and moved MENA-located postings
+from a handful to 407 — but **zero** of them contain any Arabic script. MENA
+employers on international ATS platforms advertise in English. So ar→ar is
+probably unreachable from ATS sourcing entirely, and ar→en is the cell that
+carries the bilingual claim. The Phase 5 exit criterion stays neither met nor
+missed. `docs/EVALUATION.md` has the measurement and the argument.
 
-## To pick Phase 6 up
+## Where to pick up
 
-Phase 6 is personalisation: learning from a candidate's own saves and dismissals
-(§13), within the constraint of ADR 0004 — no outcome-based learning-to-rank,
-because the labels are sparse, censored, delayed and confounded. The engagement
-events it needs are already being recorded (`user_job_events`, with
-`clock_timestamp()` ordering).
+Every phase in §18 is built, tested and pushed. What is left is not code:
 
-Before that, two things would pay for themselves:
+1. **Golden-set labelling.** Five CVs × 60 postings against the rubric in
+   `careerpilot eval rubric`. This is now the single highest-value task in the
+   project: it unblocks the ranking numbers, the Phase 5 exit criterion *and*
+   Phase 6 activation at once.
+2. **An Arabic-language posting source.** Wuzzuf, Bayt, Forasna and Tanqeeb
+   publish no public API (§5.5), so this is partnership work rather than more
+   board curation. Curation has gone as far as ATS platforms allow.
+3. **The `[ml]` extra**, if the negative controls are to pass. They are
+   measuring the absence of a semantic model, not a bug in the scorer.
 
-1. **MENA board curation.** Everything bilingual is built and none of it can be
-   measured. Collecting real Egyptian and Gulf careers-page tokens is the single
-   highest-value non-code task in the project.
-2. **Golden-set labelling.** Five CVs × 60 postings against the rubric in
-   `careerpilot eval rubric`. Until it exists, no ranking number in these docs
-   means anything.
-
-What Phase 5 left translated: the chrome, the shortlist, the match detail page,
-the preparation page and settings. Onboarding, register/login and the
-applications list are still English-only; a missing key falls back to English
-rather than to a blank, so nothing breaks — it just is not translated yet.
+On the frontend, the Arabic locale covers the chrome, shortlist, match detail,
+preparation page and settings. Onboarding, register/login and the applications
+list are still English-only; a missing key falls back to English rather than to
+a blank, so nothing breaks — it just is not translated yet.
 
 ## Environment
 
@@ -99,5 +102,14 @@ web client work regardless. Local model weights (`[ml]` extra, ~2.5 GB) are
 still deferred behind the `EmbeddingBackend` port, which is what the failing
 negative controls are measuring the absence of.
 
-The honest gap remains board curation, not code: 137 of 141 boards are
-global/EU, 1 Egyptian, 3 wider MENA. Guessed tokens do not find MENA employers.
+Board curation was the honest gap and has been worked: 166 boards now, MENA
+region up from 4 to 29, MENA-located postings at 407. The lesson is recorded in
+`docs/DATA_SOURCES.md` — guessing slugs returned 0 live boards out of 534, while
+reading tokens off live ATS URLs returned 31 of 35 (lever tokens are
+case-sensitive).
+
+What curation could **not** fix: of 391 MENA-located postings, **zero** contain
+any Arabic script. MENA employers on international ATS platforms advertise in
+English, so an ar→ar evaluation split is probably unreachable from this source
+entirely, and ar→en is the cell that carries the bilingual claim. Written up in
+`docs/EVALUATION.md`.

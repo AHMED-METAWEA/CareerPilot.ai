@@ -241,13 +241,46 @@ Labelled pairs by cell
   none — the golden set is human work (§9.1)
 ```
 
-**There are no Arabic postings in the corpus at all.** Not few — none. The
-bilingual pipeline is built and unit-tested, and there is nothing in the
-database for it to be measured on. That is a sourcing gap, not a code gap: 137
-of the 141 validated boards are global or EU, one is Egyptian, three are wider
-MENA, and guessed ATS tokens do not find MENA employers. The Arabic split
-therefore reports `None` rather than a number, and the exit criterion is
-**neither met nor missed**.
+**There are no Arabic postings in the corpus, and the reason is not the one we
+assumed.**
+
+The first diagnosis was a sourcing gap: 137 of 141 boards were global or EU, so
+of course nothing Arabic turned up. That diagnosis was acted on (12 September
+2026). MENA-region boards went from 4 to 29 and MENA-located postings from a
+handful to 407 — Bosta and Decima International in Cairo, Yassir across the
+Maghreb, HALA and Lucidya and Qiddiya in Saudi Arabia, Bayut | dubizzle and Lean
+Technologies in the UAE, Bank of Jordan in Amman.
+
+Then the 391 MENA-located postings were measured for script:
+
+```
+MENA-located postings examined : 391
+  containing any Arabic script : 0
+  genuinely mixed-script       : 0
+  primarily Arabic             : 0
+```
+
+Not a small number. Zero. Every MENA employer reachable through an international
+ATS advertises in English, including employers whose product is Arabic-language
+software — Lucidya sells Arabic social analytics and posts its engineering roles
+in English.
+
+This changes what the Phase 5 exit criterion can mean, so it is worth stating
+plainly rather than quietly redefining:
+
+* **ar→ar is probably not reachable from ATS-sourced postings at all.** The
+  Arabic-language job market advertises on Wuzzuf, Bayt, Forasna and Tanqeeb,
+  none of which publish a public API (§5.5). No amount of board curation fixes
+  that; it is a partnership problem.
+* **ar→en is the cell that carries the product's actual claim**, and it now has
+  data. A candidate with an Arabic CV applying to English-language postings in
+  Cairo or Riyadh is not an edge case in this market — it is the common case,
+  and it is precisely what §1's "shared semantic space" promises to handle.
+
+The split report is unchanged by this: it still reports `None` for any cell
+below 20 labelled pairs, and every cell is still unlabelled. The exit criterion
+remains **neither met nor missed**. What has changed is that the obstacle is now
+correctly identified — it was never only about where the boards were.
 
 Two decisions were made deliberately here, both of which would have been easier
 to fudge:

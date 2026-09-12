@@ -91,7 +91,14 @@ descriptions are never republished (§16.3).
 
 ## Registry as built
 
-141 boards, all probed live before being committed (550 candidates were tried):
+166 boards, all probed live before being committed:
+
+Two curation passes. The first tried 550 guessed tokens and kept 141. The second
+targeted MENA specifically and is the more instructive one: 534 guessed slugs
+produced **zero** live boards, while 35 tokens read off live ATS URLs produced
+31. A board token is a claim about the world (§5.7), and guessing one is not
+evidence — reading it off a page that resolves is.
+
 
 | Adapter | Boards |
 |---|---|
