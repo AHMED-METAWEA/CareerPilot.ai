@@ -190,3 +190,55 @@ def test_fetch_details_on_an_adapter_without_a_detail_phase(
         ).scalar_one()
         == "done"
     )
+
+
+# ── Scheduler wiring (§11.5, §13) ─────────────────────────────────────
+#
+# Both cases below shipped broken and failed silently. Nothing errored; the
+# corpus simply went stale and every posting was gated out of every shortlist,
+# which is only visible by inspecting the data rather than the logs.
+
+
+def _scheduled_jobs() -> dict[str, object]:
+    runner = Worker(config=get_config(), concurrency=1)
+    try:
+        runner._scheduler.start(paused=True)
+        runner._schedule_jobs()
+        return {job.id: job for job in runner._scheduler.get_jobs()}
+    finally:
+        if runner._scheduler.running:
+            runner._scheduler.shutdown(wait=False)
+
+
+def test_no_scheduled_job_is_added_paused() -> None:
+    """`next_run_time=None` does not mean "use the default" — it means paused.
+
+    Hourly discovery passed it and therefore never ran on a schedule at all,
+    which is why the corpus never met the six-hour freshness criterion.
+    """
+    jobs = _scheduled_jobs()
+    paused = [job_id for job_id, job in jobs.items() if getattr(job, "next_run_time", None) is None]
+    assert paused == [], f"these jobs would never fire: {paused}"
+
+
+def test_the_jobs_that_keep_the_corpus_visible_run_soon_after_boot() -> None:
+    """An interval trigger's first run is one whole interval away.
+
+    URL verification is twelve-hourly, so it needed twelve hours of unbroken
+    uptime to fire even once — and a restart put it back to the start. §11.5
+    makes verification the thing that keeps postings visible, so on a host that
+    restarts daily nothing was ever verified and no shortlist had anything in
+    it. Discovery has the same shape of problem on a smaller scale.
+    """
+    from datetime import UTC, datetime, timedelta
+
+    jobs = _scheduled_jobs()
+    soon = datetime.now(UTC) + timedelta(minutes=5)
+
+    for job_id in ("verify_urls", "discover"):
+        job = jobs[job_id]
+        next_run = getattr(job, "next_run_time", None)
+        assert next_run is not None, f"{job_id} is paused"
+        assert next_run <= soon, (
+            f"{job_id} does not run until {next_run}; a restart before then means it never runs"
+        )

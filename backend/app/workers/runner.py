@@ -12,7 +12,7 @@ import signal
 import threading
 import time
 import uuid
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from types import FrameType
 from typing import Any
 
@@ -133,13 +133,38 @@ class Worker:
             # a supervisor thread) stop through `shutdown()` instead.
             log.debug("worker.signal_handlers_unavailable")
 
+    @staticmethod
+    def _soon(seconds: int) -> datetime:
+        """First run `seconds` after boot, rather than one interval after it.
+
+        Two APScheduler behaviours make this necessary, and both of them fail
+        silently — which is how they survived until the corpus was inspected:
+
+        * An `interval` trigger schedules its *first* run one whole interval
+          ahead. A twelve-hourly job therefore needs twelve hours of unbroken
+          uptime before it ever fires once, and every restart puts it back to
+          the beginning. URL verification is on that cadence, and §11.5 makes
+          verification the thing that keeps postings visible at all — so on any
+          host that restarts daily, nothing was ever verified and every posting
+          was gated out of every shortlist.
+        * Passing `next_run_time=None` explicitly does not mean "use the
+          default". It adds the job **paused**, permanently. Hourly discovery
+          was passing it, so discovery never ran on a schedule at all.
+
+        A small stagger rather than zero so a restart does not fire every job
+        in the same instant.
+        """
+        return datetime.now(UTC) + timedelta(seconds=seconds)
+
     def _schedule_jobs(self) -> None:
+        # Discovery drives corpus freshness (§18 wants the newest posting under
+        # six hours old), so it runs shortly after boot and hourly thereafter.
         self._scheduler.add_job(
             self._scheduled(lambda session: enqueue_due_discoveries(session)),
             "interval",
             minutes=60,
             id="discover",
-            next_run_time=None,
+            next_run_time=self._soon(30),
             coalesce=True,
             max_instances=1,
         )
@@ -168,8 +193,10 @@ class Worker:
             coalesce=True,
             max_instances=1,
         )
-        # Every 12 hours, oldest first. Postings unverified for 48 hours are
-        # suppressed from display, so this is what keeps the corpus visible.
+        # Every 12 hours, oldest first — and once shortly after boot. Postings
+        # unverified for 48 hours are suppressed from display, so this is what
+        # keeps the corpus visible rather than merely tidy. The task re-enqueues
+        # itself while work remains, so one trigger drains the whole backlog.
         self._scheduler.add_job(
             self._scheduled(
                 lambda session: enqueue(
@@ -179,6 +206,7 @@ class Worker:
             "interval",
             hours=12,
             id="verify_urls",
+            next_run_time=self._soon(60),
             coalesce=True,
             max_instances=1,
         )
