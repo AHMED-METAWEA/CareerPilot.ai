@@ -1,4 +1,4 @@
-# Handoff — 12 September 2026
+# Handoff — 14 September 2026
 
 Phases 0 through 6 are built, verified and pushed to
 `https://github.com/AHMED-METAWEA/CareerPilot.ai`. Everything below is the state
@@ -8,7 +8,7 @@ you are resuming from.
 
 ```
 backend:  ruff · ruff format · mypy strict · import-linter (2 contracts) · alembic check
-          627 tests passing
+          633 tests passing
 frontend: tsc --noEmit · next lint · next build (25 routes)
 ```
 
@@ -44,6 +44,35 @@ frontend: tsc --noEmit · next lint · next build (25 routes)
   beats the defaults on that user's own labelled matches. Rejected fits are
   stored with their reason. `GET /api/v1/me/personalisation` shows the candidate
   the coefficients and both NDCG figures; `DELETE` turns it off.
+
+## Fixed on 13-14 September, after an end-to-end check
+
+Running the product as a new user - rather than running its tests - found two
+defects that every test suite had been green through. Both failed silently.
+
+**The worker never verified anything, so every shortlist was empty.** APScheduler
+adds a job *paused* when passed `next_run_time=None`, which hourly discovery was
+doing, so discovery never ran on a schedule at all. And an `interval` trigger
+puts its first run one whole interval ahead, so twelve-hourly URL verification
+needed twelve hours of unbroken uptime to fire once - a restart put it back to
+the start. Section 11.5 admits only postings verified inside the window, so a new
+account uploading a CV got `eligible: 0, withheld: 5000` from a pipeline that
+reported success at every step. Both jobs now run shortly after boot, with
+regression tests asserting no job is paused and that the corpus-visibility jobs
+are due within five minutes of start.
+
+**A dead fallback provider cost thirty seconds per call.** The HTTP client
+retries a refused connection three times with backoff, so every call to a local
+Ollama that is not running burned ~30s - and under a rate-limited Groq that is
+every call. Providers now raise `ProviderUnavailable` and the chain parks them
+for two minutes. Rate limiting deliberately does *not* trigger a cooldown, and a
+cooldown never empties the chain.
+
+**Not a defect:** the "seniority and years extraction returns null" reported on
+12 September was wrong. `POST /cv/{id}/profile` simply does not include those
+fields in its response; the values are extracted, grounded and stored correctly,
+and `GET /api/v1/profile` returns them. The frontend already reads the latter, so
+there is nothing to fix.
 
 ## Three things are deliberately still red
 
