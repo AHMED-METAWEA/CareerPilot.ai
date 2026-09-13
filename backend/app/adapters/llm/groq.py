@@ -17,7 +17,13 @@ import httpx
 import structlog
 
 from app.adapters.http import HttpClient, RateLimitedError, SourceUnavailableError
-from app.adapters.llm.base import ChatProvider, LLMError, LLMResult, ProviderRateLimited
+from app.adapters.llm.base import (
+    ChatProvider,
+    LLMError,
+    LLMResult,
+    ProviderRateLimited,
+    ProviderUnavailable,
+)
 
 log = structlog.get_logger(__name__)
 
@@ -67,7 +73,7 @@ class GroqProvider(ChatProvider):
         except RateLimitedError as exc:
             raise ProviderRateLimited(f"groq rate limited: {exc}", exc.retry_after) from exc
         except (SourceUnavailableError, httpx.HTTPError) as exc:
-            raise LLMError(f"groq unreachable: {exc}") from exc
+            raise ProviderUnavailable(f"groq unreachable: {exc}") from exc
 
         if response.status_code >= 400:
             raise LLMError(f"groq returned {response.status_code}: {response.text[:300]}")

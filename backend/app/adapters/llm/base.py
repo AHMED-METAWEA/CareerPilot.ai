@@ -43,6 +43,17 @@ class ProviderRateLimited(LLMError):
         self.retry_after = retry_after
 
 
+class ProviderUnavailable(LLMError):
+    """The provider could not be reached at all — not a bad answer, no answer.
+
+    Separated from a plain `LLMError` because the right response differs. A
+    schema violation or a bad status is about *this* request; a refused
+    connection is about the provider, and asking it again a second later gets
+    the same refusal at the same cost. `FallbackChain` uses this to stop paying
+    that cost on every call in a batch.
+    """
+
+
 class SchemaViolationError(LLMError):
     """The model's output did not validate, and the repair attempt also failed."""
 

@@ -22,7 +22,12 @@ from app.adapters.llm import (
     SchemaViolationError,
     complete_schema,
 )
-from app.adapters.llm.base import LLMError, LLMResult, ProviderRateLimited
+from app.adapters.llm.base import (
+    LLMError,
+    LLMResult,
+    ProviderRateLimited,
+    ProviderUnavailable,
+)
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
@@ -176,3 +181,96 @@ def test_gemini_blocked_prompt_is_reported_clearly(http: HttpClient) -> None:
     )
     with pytest.raises(LLMError, match="blockReason=SAFETY"):
         GeminiProvider(http, "g").chat(system="s", user="u", model="gemini-2.0-flash")
+
+
+# ── Cooldown for unreachable providers (§7.1) ─────────────────────────
+
+
+class _Unreachable:
+    """A provider that is not listening, and is slow to say so."""
+
+    name = "unreachable"
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def chat(self, **_: object) -> LLMResult:
+        self.calls += 1
+        raise ProviderUnavailable("connection refused")
+
+
+class _RateLimited:
+    name = "ratelimited"
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def chat(self, **_: object) -> LLMResult:
+        self.calls += 1
+        raise ProviderRateLimited("429")
+
+
+class _Working:
+    name = "working"
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def chat(self, **kwargs: object) -> LLMResult:
+        self.calls += 1
+        return LLMResult(content="{}", model=str(kwargs.get("model")), provider=self.name)
+
+
+def _chat(chain: FallbackChain) -> object:
+    return chain.chat(system="s", user="u", model="m")
+
+
+def test_an_unreachable_provider_is_skipped_after_the_first_failure() -> None:
+    """A refused connection costs ~30s of HTTP retries, and under a rate-limited
+    primary that was paid on every single call — twelve minutes in one run."""
+    dead, working = _Unreachable(), _Working()
+    chain = FallbackChain([dead, working], clock=lambda: 0.0)
+
+    for _ in range(5):
+        _chat(chain)
+
+    assert dead.calls == 1, "the dead provider must be tried once, not five times"
+    assert working.calls == 5
+
+
+def test_the_cooldown_expires() -> None:
+    """Short enough that a provider coming back is picked up quickly."""
+    dead, working = _Unreachable(), _Working()
+    now = 0.0
+    chain = FallbackChain([dead, working], clock=lambda: now, cooldown_seconds=120.0)
+
+    _chat(chain)
+    assert dead.calls == 1
+    now = 121.0
+    _chat(chain)
+    assert dead.calls == 2, "after the cooldown it is tried again"
+
+
+def test_rate_limiting_does_not_trigger_a_cooldown() -> None:
+    """ "Not now" is not "not here". Parking the primary over one burst would
+    send every later request to a weaker model."""
+    limited, working = _RateLimited(), _Working()
+    chain = FallbackChain([limited, working], clock=lambda: 0.0)
+
+    for _ in range(3):
+        _chat(chain)
+
+    assert limited.calls == 3, "the primary must keep being offered work"
+
+
+def test_a_cooldown_never_empties_the_chain() -> None:
+    """A transient outage must not make the system refuse work it could do."""
+    dead = _Unreachable()
+    chain = FallbackChain([dead], clock=lambda: 0.0)
+
+    with pytest.raises(LLMError):
+        _chat(chain)
+    with pytest.raises(LLMError):
+        _chat(chain)
+
+    assert dead.calls == 2, "the only provider is still tried rather than skipped"

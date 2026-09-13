@@ -8,7 +8,13 @@ from typing import Any
 import httpx
 
 from app.adapters.http import HttpClient, RateLimitedError, SourceUnavailableError
-from app.adapters.llm.base import ChatProvider, LLMError, LLMResult, ProviderRateLimited
+from app.adapters.llm.base import (
+    ChatProvider,
+    LLMError,
+    LLMResult,
+    ProviderRateLimited,
+    ProviderUnavailable,
+)
 
 BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
@@ -47,7 +53,7 @@ class GeminiProvider(ChatProvider):
         except RateLimitedError as exc:
             raise ProviderRateLimited(f"gemini rate limited: {exc}", exc.retry_after) from exc
         except (SourceUnavailableError, httpx.HTTPError) as exc:
-            raise LLMError(f"gemini unreachable: {exc}") from exc
+            raise ProviderUnavailable(f"gemini unreachable: {exc}") from exc
 
         if response.status_code >= 400:
             raise LLMError(f"gemini returned {response.status_code}: {response.text[:300]}")

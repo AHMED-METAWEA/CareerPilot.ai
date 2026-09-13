@@ -13,7 +13,7 @@ from typing import Any
 import httpx
 
 from app.adapters.http import HttpClient, RateLimitedError, SourceUnavailableError
-from app.adapters.llm.base import ChatProvider, LLMError, LLMResult
+from app.adapters.llm.base import ChatProvider, LLMError, LLMResult, ProviderUnavailable
 
 
 class OllamaProvider(ChatProvider):
@@ -49,7 +49,7 @@ class OllamaProvider(ChatProvider):
                 json=payload,
             )
         except (RateLimitedError, SourceUnavailableError, httpx.HTTPError) as exc:
-            raise LLMError(f"ollama unreachable at {self._base_url}: {exc}") from exc
+            raise ProviderUnavailable(f"ollama unreachable at {self._base_url}: {exc}") from exc
 
         if response.status_code >= 400:
             raise LLMError(f"ollama returned {response.status_code}: {response.text[:300]}")
