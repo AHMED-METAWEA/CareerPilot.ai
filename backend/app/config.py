@@ -39,6 +39,27 @@ class Settings(BaseSettings):
 
     groq_api_key: str | None = None
     gemini_api_key: str | None = None
+    groq_api_keys: str | None = None
+    gemini_api_keys: str | None = None
+    """Comma-separated pools. A rate limit is per key, so several keys are
+    several quotas — the plural form is how the system gets past one free-tier
+    ceiling. The singular names still work and are treated as a pool of one."""
+
+    @staticmethod
+    def _split_keys(*values: str | None) -> list[str]:
+        keys: list[str] = []
+        for value in values:
+            if not value:
+                continue
+            keys.extend(part.strip() for part in value.split(",") if part.strip())
+        return keys
+
+    def groq_keys(self) -> list[str]:
+        return self._split_keys(self.groq_api_keys, self.groq_api_key)
+
+    def gemini_keys(self) -> list[str]:
+        return self._split_keys(self.gemini_api_keys, self.gemini_api_key)
+
     ollama_base_url: str = "http://localhost:11434"
 
     adzuna_app_id: str | None = None

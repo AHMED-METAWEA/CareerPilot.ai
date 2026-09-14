@@ -274,3 +274,56 @@ def test_a_cooldown_never_empties_the_chain() -> None:
         _chat(chain)
 
     assert dead.calls == 2, "the only provider is still tried rather than skipped"
+
+
+# ── Key rotation through the provider (§7.1) ──────────────────────────
+
+
+@respx.mock
+def test_groq_rotates_keys_and_meters_them_separately(http_client: HttpClient) -> None:
+    """The provider must actually send different keys, and give each its own
+    rate budget — sharing one budget would meter four keys as one."""
+    seen: list[str] = []
+
+    def record(request: httpx.Request) -> httpx.Response:
+        seen.append(request.headers["Authorization"])
+        return httpx.Response(200, json={"choices": [{"message": {"content": "{}"}}], "usage": {}})
+
+    respx.post("https://api.groq.com/openai/v1/chat/completions").mock(side_effect=record)
+    provider = GroqProvider(http_client, ["k1", "k2", "k3"])
+    assert provider.keys == 3
+
+    for _ in range(6):
+        provider.chat(system="s", user="u", model="m")
+
+    assert {h.removeprefix("Bearer ") for h in seen} == {"k1", "k2", "k3"}
+    assert len({row["key"] for row in provider.key_stats()}) == 3
+
+
+@respx.mock
+def test_a_rate_limited_key_is_parked_and_the_next_call_uses_another(
+    http_client: HttpClient,
+) -> None:
+    """One key hitting its ceiling must not take the pool down with it."""
+    seen: list[str] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        key = request.headers["Authorization"].removeprefix("Bearer ")
+        seen.append(key)
+        if key == "k1":
+            return httpx.Response(429, headers={"Retry-After": "30"})
+        return httpx.Response(200, json={"choices": [{"message": {"content": "{}"}}], "usage": {}})
+
+    respx.post("https://api.groq.com/openai/v1/chat/completions").mock(side_effect=respond)
+    provider = GroqProvider(http_client, ["k1", "k2"])
+
+    with pytest.raises(ProviderRateLimited):
+        provider.chat(system="s", user="u", model="m")
+
+    # k1 is now parked, so the next several calls must all land on k2.
+    for _ in range(3):
+        provider.chat(system="s", user="u", model="m")
+    assert seen[1:] == ["k2", "k2", "k2"]
+
+    parked = next(row for row in provider.key_stats() if row["rate_limits"] == 1)
+    assert parked["cooling_down_for"] > 0

@@ -445,9 +445,9 @@ def models_check() -> None:
 
     def provider_for(name: str) -> Any:
         if name == "groq":
-            return GroqProvider(http, settings.groq_api_key or "")
+            return GroqProvider(http, settings.groq_keys())
         if name == "gemini":
-            return GeminiProvider(http, settings.gemini_api_key or "")
+            return GeminiProvider(http, settings.gemini_keys())
         if name == "ollama":
             return OllamaProvider(http)
         return None
@@ -461,6 +461,10 @@ def models_check() -> None:
         for name in config.models.fallbacks
     ]
 
+    typer.echo(
+        f"key pools: groq={len(settings.groq_keys())} gemini={len(settings.gemini_keys())}\n"
+    )
+
     failures = 0
     try:
         for role, provider_name, model in targets:
@@ -468,15 +472,21 @@ def models_check() -> None:
             if provider is None:
                 typer.echo(f"[skip] {role:<18} {provider_name}: no adapter")
                 continue
+            # One call per key, not one per provider: a pool is only as good
+            # as its worst member, and a single dead key in four is exactly the
+            # kind of thing that shows up later as an unexplained failure rate.
+            calls = getattr(provider, "keys", 1)
             try:
-                provider.chat(
-                    system="You return a single JSON object and nothing else.",
-                    user='Return this json exactly: {"ok": true}',
-                    model=model,
-                    json_mode=True,
-                    max_tokens=32,
-                )
-                typer.echo(f"[ok]   {role:<18} {provider_name}/{model}")
+                for _ in range(calls):
+                    provider.chat(
+                        system="You return a single JSON object and nothing else.",
+                        user='Return this json exactly: {"ok": true}',
+                        model=model,
+                        json_mode=True,
+                        max_tokens=32,
+                    )
+                suffix = f" ({calls} keys)" if calls > 1 else ""
+                typer.echo(f"[ok]   {role:<18} {provider_name}/{model}{suffix}")
             except ProviderUnavailable:
                 # Not the failure this command is looking for. A provider that
                 # is not running says nothing about whether its model

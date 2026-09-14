@@ -152,13 +152,22 @@ def build_provider(settings: Settings, http: HttpClient, fallbacks: list[str]) -
     a clear error if that key is missing too.
     """
     providers: list[ChatProvider] = []
-    if settings.groq_api_key:
-        providers.append(GroqProvider(http, settings.groq_api_key))
+    groq_keys = settings.groq_keys()
+    if groq_keys:
+        providers.append(GroqProvider(http, groq_keys))
 
+    gemini_keys = settings.gemini_keys()
     for name in fallbacks:
-        if name == "gemini" and settings.gemini_api_key:
-            providers.append(GeminiProvider(http, settings.gemini_api_key))
+        if name == "gemini" and gemini_keys:
+            providers.append(GeminiProvider(http, gemini_keys))
         elif name == "ollama":
             providers.append(OllamaProvider(http, settings.ollama_base_url))
 
+    if providers:
+        log.info(
+            "llm.chain_built",
+            providers=[p.name for p in providers],
+            groq_keys=len(groq_keys),
+            gemini_keys=len(gemini_keys),
+        )
     return FallbackChain(providers)
