@@ -278,9 +278,34 @@ class ProfilingService:
         ).one()
         return uuid.UUID(str(row.id))
 
+    @staticmethod
+    def _best_per_skill(grounded: GroundedProfile) -> list[Any]:
+        """One entry per canonical skill, keeping the best-evidenced mention.
+
+        A CV names the same thing more than once and in more than one way —
+        "Machine Learning" in the summary, "ML" in a bullet, "machine learning"
+        in a skills list. The taxonomy resolves all three to one canonical name,
+        which is the point of having a taxonomy, but each mention arrived here as
+        its own row: the candidate was shown "Machine Learning" three times, and
+        the skill was counted three times in coverage scoring.
+
+        Ranked rather than first-wins, because the mentions are not equally
+        useful: one may carry a verified span, another the years attached to it.
+        """
+
+        def informativeness(skill: Any) -> tuple[bool, bool, bool]:
+            return (skill.span is not None, skill.years is not None, bool(skill.proficiency))
+
+        best: dict[str, Any] = {}
+        for skill in grounded.skills:
+            current = best.get(skill.canonical_name)
+            if current is None or informativeness(skill) > informativeness(current):
+                best[skill.canonical_name] = skill
+        return list(best.values())
+
     def _persist_skills(self, profile_id: uuid.UUID, grounded: GroundedProfile) -> int:
         stored = 0
-        for skill in grounded.skills:
+        for skill in self._best_per_skill(grounded):
             skill_id = self.session.execute(
                 text("SELECT id FROM skills WHERE canonical_name = :name"),
                 {"name": skill.canonical_name},
@@ -295,6 +320,7 @@ class ProfilingService:
                                                 evidence_span, source)
                     VALUES (:profile_id, :skill_id, :years, :proficiency,
                             CAST(:span AS int4range), 'extracted')
+                    ON CONFLICT (profile_id, skill_id) DO NOTHING
                     """
                 ),
                 {

@@ -255,3 +255,42 @@ def test_mislabelled_pdf_is_rejected(
 
     with pytest.raises(ExtractionFailedError):
         service.ingest_cv(user_id, b"this is not a pdf", PDF_MIME)
+
+
+def test_the_same_skill_named_several_ways_is_stored_once() -> None:
+    """A CV writes "Machine Learning", "ML" and "machine learning" in different
+    places. The taxonomy folds all three to one canonical skill — that is what a
+    taxonomy is for — but each mention was inserted as its own row, so the
+    candidate was shown the same chip three times and coverage scoring counted
+    it three times.
+    """
+    from app.domain.profile.extraction import GroundedProfile, GroundedSkill
+    from app.domain.profile.spans import EvidenceSpan
+    from app.domain.safety.taxonomy import MatchMethod, SkillMatch
+
+    def mention(raw: str, span: EvidenceSpan | None, years: float | None) -> GroundedSkill:
+        return GroundedSkill(
+            canonical_name="Machine Learning" if raw != "Python" else "Python",
+            raw_token=raw,
+            span=span,
+            years=years,
+            proficiency=None,
+            match=SkillMatch(raw, "Machine Learning", MatchMethod.ALIAS, 1.0),
+        )
+
+    grounded = GroundedProfile()
+    grounded.skills = [
+        mention("ML", None, None),
+        mention("Machine Learning", EvidenceSpan(10, 26), 3.0),
+        mention("machine learning", EvidenceSpan(40, 56), None),
+        mention("Python", EvidenceSpan(0, 6), None),
+    ]
+
+    kept = ProfilingService._best_per_skill(grounded)
+
+    assert sorted(skill.canonical_name for skill in kept) == ["Machine Learning", "Python"]
+    # The mention kept is the best-evidenced one, not merely the first: it is
+    # the one the evidence view cites back to the candidate.
+    machine_learning = next(s for s in kept if s.canonical_name == "Machine Learning")
+    assert machine_learning.span is not None
+    assert machine_learning.years == 3.0

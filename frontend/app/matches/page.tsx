@@ -1,13 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MatchCard } from "@/components/MatchCard";
-import { api, ApiError, isSignedIn, type MatchCardData } from "@/lib/api";
-
-type MatchesResponse = {
-  matches: MatchCardData[];
-  pool_size: number;
-  next_cursor: number | null;
-};
+import { api, ApiError, isSignedIn, type MatchCardData, type MatchList } from "@/lib/api";
 
 export default async function MatchesPage({
   searchParams,
@@ -21,16 +15,16 @@ export default async function MatchesPage({
   if (min) query.set("min_percentile", min);
   if (remote === "true") query.set("remote", "true");
 
-  let data: MatchesResponse;
+  let data: MatchList;
   try {
-    data = await api<MatchesResponse>(`/api/v1/matches?${query}`);
+    data = await api<MatchList>(`/api/v1/matches?${query}`);
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) redirect("/login");
     throw error;
   }
 
   if (data.matches.length === 0) {
-    return <EmptyState poolSize={data.pool_size} />;
+    return <EmptyState poolSize={data.pool_size} refreshing={data.refresh_in_progress} />;
   }
 
   return (
@@ -78,7 +72,31 @@ function Filter({ href, label, active }: { href: string; label: string; active: 
   );
 }
 
-function EmptyState({ poolSize }: { poolSize: number }) {
+function EmptyState({ poolSize, refreshing }: { poolSize: number; refreshing: boolean }) {
+  // An empty list has three quite different meanings, and telling a candidate
+  // the wrong one is worse than telling them nothing. Someone whose run is
+  // still going was previously shown "No matches yet — Upload a CV", which is
+  // both wrong and the one instruction they had already followed.
+  if (refreshing) {
+    return (
+      <div className="mx-auto max-w-lg py-10 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight">Building your shortlist</h1>
+        <p className="mt-3 text-sm text-[var(--color-ink-soft)]">
+          We are reading your CV against every live opening and checking each requirement
+          against what your CV actually says. This usually takes a few minutes.
+        </p>
+        <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
+          Nothing is lost if you leave this page — reload it when you come back.
+        </p>
+        <form action="/matches" method="get" className="mt-6">
+          <button className="rounded-md border border-[var(--color-line)] px-4 py-2 text-sm">
+            Reload
+          </button>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-lg py-10 text-center">
       <h1 className="text-2xl font-semibold tracking-tight">No matches yet</h1>

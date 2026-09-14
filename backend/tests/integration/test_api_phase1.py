@@ -331,3 +331,67 @@ def test_withheld_explains_each_reason(
     reasons = body["withheld"][0]["reasons"]
     # Withholding without an explanation is indistinguishable from a broken search.
     assert all(len(reason["explanation"]) > 20 for reason in reasons)
+
+
+def test_an_empty_shortlist_says_whether_a_run_is_still_going(
+    client: TestClient, db_session: Session, account: tuple[uuid.UUID, dict[str, str]]
+) -> None:
+    """An empty list has more than one meaning (§11.6).
+
+    A matching run takes minutes, longer when the inference provider is rate
+    limiting. A candidate who had just uploaded a CV was shown "No matches yet —
+    Upload a CV": wrong, and the one instruction they had already followed.
+    """
+    user_id, headers = account
+
+    idle = client.get("/api/v1/matches", headers=headers).json()
+    assert idle["refresh_in_progress"] is False
+
+    db_session.execute(
+        sa.text(
+            "INSERT INTO task_queue (task_type, payload, status) "
+            "VALUES ('match_users', CAST(:payload AS jsonb), 'running')"
+        ),
+        {"payload": json.dumps({"profile_id": str(uuid.uuid4())})},
+    )
+    db_session.commit()
+
+    # Another user's run must not show as this user's.
+    assert client.get("/api/v1/matches", headers=headers).json()["refresh_in_progress"] is False
+
+    profile_id = db_session.execute(
+        sa.text("SELECT id FROM candidate_profiles WHERE user_id = :u LIMIT 1"), {"u": user_id}
+    ).scalar_one_or_none()
+    if profile_id is None:
+        document_id = db_session.execute(
+            sa.text(
+                "INSERT INTO cv_documents (user_id, storage_key, mime, sha256) "
+                "VALUES (:u, 'k', 'text/plain', :s) RETURNING id"
+            ),
+            {"u": user_id, "s": uuid.uuid4().hex * 2},
+        ).scalar_one()
+        version_id = db_session.execute(
+            sa.text(
+                "INSERT INTO cv_versions (cv_document_id, version, raw_text, parse_quality, "
+                "parser_version) VALUES (:d, 1, 'cv', 0.9, 't') RETURNING id"
+            ),
+            {"d": document_id},
+        ).scalar_one()
+        profile_id = db_session.execute(
+            sa.text(
+                "INSERT INTO candidate_profiles (user_id, cv_version_id) "
+                "VALUES (:u, :v) RETURNING id"
+            ),
+            {"u": user_id, "v": version_id},
+        ).scalar_one()
+
+    db_session.execute(
+        sa.text(
+            "INSERT INTO task_queue (task_type, payload, status) "
+            "VALUES ('match_users', CAST(:payload AS jsonb), 'pending')"
+        ),
+        {"payload": json.dumps({"profile_id": str(profile_id)})},
+    )
+    db_session.commit()
+
+    assert client.get("/api/v1/matches", headers=headers).json()["refresh_in_progress"] is True

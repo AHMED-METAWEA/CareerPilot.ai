@@ -220,6 +220,14 @@ class ProfileEmbedding(Base):
 
 class ProfileSkill(Base):
     __tablename__ = "profile_skills"
+    __table_args__ = (
+        # One row per skill per profile. A CV names the same thing several ways
+        # ("Machine Learning", "ML", "machine learning"); the taxonomy folds
+        # them to one canonical skill, and without this each mention became its
+        # own row — shown three times to the candidate and counted three times
+        # in coverage scoring.
+        UniqueConstraint("profile_id", "skill_id", name="uq_profile_skills_profile_skill"),
+    )
 
     id: Mapped[uuid.UUID] = _pk()
     profile_id: Mapped[uuid.UUID] = mapped_column(

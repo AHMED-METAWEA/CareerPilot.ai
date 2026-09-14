@@ -189,6 +189,14 @@ export type ApplicationRow = {
   event_count: number;
 };
 
+export type MatchList = {
+  matches: MatchCardData[];
+  pool_size: number;
+  /** A matching run is queued or running for this account right now. */
+  refresh_in_progress: boolean;
+  next_cursor: number | null;
+};
+
 export type WithheldRow = {
   title: string;
   company: string | null;

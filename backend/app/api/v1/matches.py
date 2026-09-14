@@ -103,9 +103,35 @@ def list_matches(
         {"user_id": user_id, "model_version": MODEL_VERSION},
     ).scalar_one()
 
+    # Whether a run is in flight, so an empty list can say which kind of empty
+    # it is. A matching run takes minutes — longer when the inference provider
+    # is rate limiting — and a candidate who has just uploaded a CV was being
+    # shown "No matches yet · Upload a CV", which is both wrong and the one
+    # instruction they had already followed.
+    refreshing = session.execute(
+        text(
+            """
+            SELECT EXISTS (
+                SELECT 1 FROM task_queue t
+                 WHERE t.task_type = 'match_users'
+                   AND t.status IN ('pending', 'running')
+                   AND (
+                        -- the nightly run covers every profile
+                        t.payload->>'profile_id' IS NULL
+                        OR t.payload->>'profile_id' IN (
+                            SELECT id::text FROM candidate_profiles WHERE user_id = :user_id
+                        )
+                   )
+            )
+            """
+        ),
+        {"user_id": user_id},
+    ).scalar_one()
+
     return {
         "matches": [_card(row, pool_size) for row in rows],
         "pool_size": pool_size,
+        "refresh_in_progress": bool(refreshing),
         "next_cursor": cursor + len(rows) if len(rows) == limit else None,
     }
 

@@ -80,6 +80,16 @@ export default async function OnboardingPage({
 }
 
 function ProfileSummary({ profile }: { profile: Profile }) {
+  // One chip per skill. A CV names the same thing several ways — "Machine
+  // Learning", "ML", "machine learning" — and the taxonomy folds them to one
+  // canonical name, so the same name could arrive more than once. React then
+  // warns about duplicate keys, and the candidate is told they have eighteen
+  // skills when they have sixteen. The API no longer sends duplicates, but the
+  // count shown to a person should not depend on that staying true.
+  const skills = Array.from(
+    new Map(profile.skills.map((skill) => [skill.name, skill])).values(),
+  );
+
   return (
     <section className="rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] p-5">
       <div className="flex items-baseline justify-between gap-3">
@@ -114,10 +124,10 @@ function ProfileSummary({ profile }: { profile: Profile }) {
       </dl>
 
       <h3 className="mt-5 text-xs text-[var(--color-ink-soft)]">
-        Skills ({profile.skills.length}) — each one appears in your CV
+        Skills ({skills.length}) — each one appears in your CV
       </h3>
       <ul className="mt-2 flex flex-wrap gap-2">
-        {profile.skills.map((skill) => (
+        {skills.map((skill) => (
           <li
             key={skill.name}
             title={`Evidenced at characters ${skill.evidence_span[0]}–${skill.evidence_span[1]} of your CV`}
