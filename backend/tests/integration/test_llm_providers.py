@@ -327,3 +327,35 @@ def test_a_rate_limited_key_is_parked_and_the_next_call_uses_another(
 
     parked = next(row for row in provider.key_stats() if row["rate_limits"] == 1)
     assert parked["cooling_down_for"] > 0
+
+
+@respx.mock
+def test_a_refused_credential_is_reported_as_unavailable(http_client: HttpClient) -> None:
+    """A 403 is not a bad request — it is a provider that will keep saying no
+    until a human changes something. Reported as unavailable so the chain parks
+    it instead of paying for the same refusal on every fallthrough.
+    """
+    respx.post("https://api.groq.com/openai/v1/chat/completions").mock(
+        return_value=httpx.Response(403, text='{"error":{"message":"denied"}}')
+    )
+    provider = GroqProvider(http_client, "k")
+
+    with pytest.raises(ProviderUnavailable, match="refused the credential"):
+        provider.chat(system="s", user="u", model="m")
+
+
+@respx.mock
+def test_a_denied_provider_is_only_asked_once_per_cooldown(http_client: HttpClient) -> None:
+    """The observed case: a Gemini project denied server-side overnight, and
+    every rate-limited Groq call then paid a round trip to be refused again."""
+    denied = respx.post("https://api.groq.com/openai/v1/chat/completions").mock(
+        return_value=httpx.Response(403, text="denied")
+    )
+    working = _Working()
+    chain = FallbackChain([GroqProvider(http_client, "k"), working], clock=lambda: 0.0)
+
+    for _ in range(4):
+        chain.chat(system="s", user="u", model="m")
+
+    assert denied.call_count == 1, "asked once, then parked"
+    assert working.calls == 4

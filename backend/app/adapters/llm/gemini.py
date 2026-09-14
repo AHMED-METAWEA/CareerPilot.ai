@@ -88,6 +88,15 @@ class GeminiProvider(ChatProvider):
         except (SourceUnavailableError, httpx.HTTPError) as exc:
             raise ProviderUnavailable(f"gemini unreachable: {exc}") from exc
 
+        if response.status_code in (401, 403):
+            # A refused credential is not a bad request, it is a provider that
+            # will keep saying no until a human changes something. Reported as
+            # unavailable so the chain parks it rather than paying for the same
+            # refusal on every fallthrough — the same reasoning as a refused
+            # connection, arriving over HTTP instead of TCP.
+            raise ProviderUnavailable(
+                f"gemini refused the credential ({response.status_code}): {response.text[:200]}"
+            )
         if response.status_code >= 400:
             raise LLMError(f"gemini returned {response.status_code}: {response.text[:300]}")
 
