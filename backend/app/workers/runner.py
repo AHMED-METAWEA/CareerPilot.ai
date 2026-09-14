@@ -193,10 +193,16 @@ class Worker:
             coalesce=True,
             max_instances=1,
         )
-        # Every 12 hours, oldest first — and once shortly after boot. Postings
-        # unverified for 48 hours are suppressed from display, so this is what
-        # keeps the corpus visible rather than merely tidy. The task re-enqueues
-        # itself while work remains, so one trigger drains the whole backlog.
+        # Hourly, oldest first, and once shortly after boot. Postings unverified
+        # for 48 hours are suppressed from display, so this is what keeps the
+        # corpus visible rather than merely tidy.
+        #
+        # The task re-enqueues itself while work remains, so in the normal case
+        # one trigger drains the whole backlog and every later trigger is a
+        # no-op — `dedup_key` makes re-enqueuing a live chain free. The interval
+        # is therefore not a cadence but a recovery bound: a chain that dies
+        # takes verification down with it, and at twelve hours that outage
+        # outlasted the 48-hour suppression window for part of the corpus.
         self._scheduler.add_job(
             self._scheduled(
                 lambda session: enqueue(
@@ -204,7 +210,7 @@ class Worker:
                 )
             ),
             "interval",
-            hours=12,
+            hours=1,
             id="verify_urls",
             next_run_time=self._soon(60),
             coalesce=True,

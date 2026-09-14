@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from app.adapters.http import HttpClient
 from app.config import get_config
 from app.domain.models import UrlStatus
-from app.services.verification import VerificationService
+from app.services.verification import VerificationOutcome, VerificationService
 
 pytestmark = pytest.mark.db
 
@@ -197,3 +197,45 @@ def test_recently_verified_postings_are_not_rechecked(
     db_session.commit()
 
     assert route.call_count == 1
+
+
+# ── Lock contention (§11.5) ───────────────────────────────────────────
+
+
+def test_each_posting_is_committed_before_the_next_is_fetched(
+    db_session: Session, http_client: HttpClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verifying 60 URLs takes minutes of network I/O.
+
+    Holding one transaction across all of it kept a row lock on every posting
+    for the whole batch, so discovery and detail-fetching queued behind it until
+    Postgres cancelled somebody on `statement_timeout`. When the loser was this
+    task it died — and since the chain only re-enqueues itself on success,
+    verification stopped entirely until the next scheduled trigger.
+    """
+    service = VerificationService(db_session, http_client, get_config())
+    committed: list[int] = []
+    verified: list[int] = []
+
+    real_commit = db_session.commit
+    monkeypatch.setattr(
+        db_session, "commit", lambda: (committed.append(len(verified)), real_commit())[1]
+    )
+
+    def fake_verify_one(**kwargs: object) -> VerificationOutcome:
+        verified.append(1)
+        return VerificationOutcome(
+            kwargs["posting_id"],  # type: ignore[arg-type]
+            UrlStatus.LIVE,
+            detail={"status": 200},
+        )
+
+    monkeypatch.setattr(service, "verify_one", fake_verify_one)
+    report = service.verify_batch(limit=3)
+
+    assert report.checked == len(committed), (
+        "one commit per posting, so a lock is held for a write rather than for a batch"
+    )
+    assert committed == list(range(1, report.checked + 1)), (
+        "commits must interleave with verifications, not all land at the end"
+    )

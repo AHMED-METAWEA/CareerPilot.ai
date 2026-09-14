@@ -49,7 +49,13 @@ dedup:
   company_review_threshold: 0.75
 
 verification:
-  reverify_after_hours: 12
+  # Re-verify at 24h, suppress at 48h. The gap is deliberate headroom: a posting
+  # whose check fails or is delayed has a second full day to be re-checked
+  # before it is hidden. Verification runs at roughly 1,500 postings an hour
+  # (sixty per batch behind a two-second per-host throttle), so a 12-hour cycle
+  # over an 18,000-posting corpus needed ~1,550/hour — break-even on a corpus
+  # that grows every hour discovery runs. At 24 hours it needs ~770.
+  reverify_after_hours: 24
   suppress_after_hours: 48
   per_host_min_interval_seconds: 2
 

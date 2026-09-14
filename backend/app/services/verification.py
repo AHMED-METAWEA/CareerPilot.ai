@@ -119,6 +119,20 @@ class VerificationService:
             )
             self._persist(outcome)
             report.record(outcome.status)
+            # Commit per posting rather than per batch. Verifying sixty URLs
+            # takes minutes — each one is a network round trip behind a two
+            # second per-host throttle — and every `_persist` takes a row lock
+            # that a single batch-wide transaction would hold for that whole
+            # time. Discovery and detail-fetching write the same rows, so they
+            # queued behind it until Postgres cancelled somebody on
+            # `statement_timeout`. When the loser was this task it died, and
+            # since the chain re-enqueues itself only on success, verification
+            # stopped until the next scheduled trigger.
+            #
+            # Committing here also means a batch that dies half way keeps the
+            # half it finished: those postings really were verified, and
+            # throwing that away would be a second cost on top of the failure.
+            self.session.commit()
 
         log.info(
             "verify_urls.completed",
