@@ -420,6 +420,84 @@ def eval_controls() -> None:
         raise typer.Exit(code=1)
 
 
+@app.command("models-check")
+def models_check() -> None:
+    """Probe every configured model and report which still resolve (§7.4).
+
+    A model identifier is a claim about someone else's catalogue, and it decays
+    the way a board token does. This has now bitten the project three times —
+    two Groq Llama models and a Gemini flash model, each retired without notice
+    — and every time the failure was silent in a different way: extraction
+    returned empty objects, or the fallback chain reported "every provider
+    failed" from inside a task nobody was watching.
+
+    The board registry has `boards validate` for exactly this reason. This is
+    the same idea pointed at models.
+    """
+    from app.adapters.llm.base import ProviderUnavailable
+    from app.adapters.llm.chain import _FALLBACK_MODELS
+    from app.adapters.llm.gemini import GeminiProvider
+    from app.adapters.llm.groq import GroqProvider
+    from app.adapters.llm.ollama import OllamaProvider
+
+    config, settings = get_config(), get_settings()
+    http = _http()
+
+    def provider_for(name: str) -> Any:
+        if name == "groq":
+            return GroqProvider(http, settings.groq_api_key or "")
+        if name == "gemini":
+            return GeminiProvider(http, settings.gemini_api_key or "")
+        if name == "ollama":
+            return OllamaProvider(http)
+        return None
+
+    targets: list[tuple[str, str, str]] = [
+        ("extraction", config.models.extraction.provider, config.models.extraction.model),
+        ("analysis", config.models.analysis.provider, config.models.analysis.model),
+    ]
+    targets += [
+        (f"fallback:{name}", name, _FALLBACK_MODELS.get(name, "?"))
+        for name in config.models.fallbacks
+    ]
+
+    failures = 0
+    try:
+        for role, provider_name, model in targets:
+            provider = provider_for(provider_name)
+            if provider is None:
+                typer.echo(f"[skip] {role:<18} {provider_name}: no adapter")
+                continue
+            try:
+                provider.chat(
+                    system="You return a single JSON object and nothing else.",
+                    user='Return this json exactly: {"ok": true}',
+                    model=model,
+                    json_mode=True,
+                    max_tokens=32,
+                )
+                typer.echo(f"[ok]   {role:<18} {provider_name}/{model}")
+            except ProviderUnavailable:
+                # Not the failure this command is looking for. A provider that
+                # is not running says nothing about whether its model
+                # identifier is still valid, and a check that reports it as a
+                # failure is a check people learn to ignore.
+                typer.echo(f"[down] {role:<18} {provider_name}: not reachable, model unchecked")
+            except Exception as exc:
+                failures += 1
+                typer.echo(f"[FAIL] {role:<18} {provider_name}/{model}: {str(exc)[:100]}")
+    finally:
+        http.close()
+
+    if failures:
+        typer.echo(
+            f"\n{failures} configured model(s) did not answer. A retired identifier fails "
+            "silently in the pipeline — fix config/config.yaml before the next run."
+        )
+        raise typer.Exit(code=1)
+    typer.echo("\nevery configured model answered")
+
+
 @app.command("personalise")
 def personalise(
     user: str = typer.Option(..., "--user", help="User id, or 'all'"),

@@ -124,7 +124,17 @@ class FallbackChain(ChatProvider):
 
 
 _FALLBACK_MODELS = {
-    "gemini": "gemini-2.0-flash",
+    # Verified against the live catalogue on 14 September 2026. `gemini-2.0-flash`
+    # was here until it was retired and started 404ing, which is the third time a
+    # pinned model name has gone stale under this project — the Groq Llama models
+    # went the same way. `careerpilot models check` exists to catch the next one
+    # before a user does.
+    #
+    # Pinned rather than aliased on purpose. `gemini-flash-latest` never 404s,
+    # but on test it resolved to a model returning 503 "overloaded" while
+    # `gemini-3.5-flash` answered first time — an alias trades a failure you can
+    # read for one you cannot predict.
+    "gemini": "gemini-3.5-flash",
     "ollama": "llama3.1:8b",
 }
 

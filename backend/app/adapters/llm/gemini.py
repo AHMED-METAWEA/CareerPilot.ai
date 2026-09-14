@@ -19,6 +19,15 @@ from app.adapters.llm.base import (
 BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
+LLM_RETRY_WAIT_BUDGET = 8.0
+"""Seconds of rate-limit backoff a provider will absorb before handing over.
+
+The chain exists precisely so that a busy provider is not worth waiting for.
+Groq's free tier answers 429 with `Retry-After` values up to forty-five seconds;
+absorbing that inside the provider meant a matching run paid it on every
+posting, while a configured fallback sat idle three seconds away."""
+
+
 class GeminiProvider(ChatProvider):
     name = "gemini"
 
@@ -49,6 +58,7 @@ class GeminiProvider(ChatProvider):
                 rate_limit_rpm=14,  # free tier is 15 rpm; leave a request of headroom
                 headers={"Content-Type": "application/json", "x-goog-api-key": self._api_key},
                 json=payload,
+                max_retry_wait=LLM_RETRY_WAIT_BUDGET,
             )
         except RateLimitedError as exc:
             raise ProviderRateLimited(f"gemini rate limited: {exc}", exc.retry_after) from exc

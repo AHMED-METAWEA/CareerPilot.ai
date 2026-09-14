@@ -147,7 +147,18 @@ class HttpClient:
         params: dict[str, Any] | None = None,
         json: Any | None = None,
         conditional: ConditionalState | None = None,
+        max_retry_wait: float | None = None,
     ) -> httpx.Response:
+        """`max_retry_wait` caps how long a 429 is waited out before giving up.
+
+        Honouring a long `Retry-After` is right when this client is the only way
+        to get the data — an ATS board will not answer faster because we asked
+        twice. It is wrong behind a fallback chain: sleeping forty-five seconds
+        inside a rate-limited provider while a second provider would answer in
+        three is time spent for nothing, and it is paid on every call of a
+        batch. Callers that have somewhere else to go pass a small cap and let
+        the chain move on.
+        """
         host = urlsplit(url).hostname or "unknown"
         merged = dict(headers or {})
         if conditional:
@@ -171,6 +182,21 @@ class HttpClient:
 
             if response.status_code in (429, 503):
                 retry_after = _parse_retry_after(response.headers.get("retry-after"))
+                if max_retry_wait is not None and (retry_after or backoff) > max_retry_wait:
+                    # Longer than the caller is willing to wait. Reported as a
+                    # rate limit rather than an error so the chain treats it as
+                    # "not now" and tries the next provider.
+                    log.info(
+                        "http.rate_limit_exceeds_budget",
+                        url=url,
+                        retry_after=retry_after,
+                        budget=max_retry_wait,
+                    )
+                    raise RateLimitedError(
+                        f"{host} asked for {retry_after or backoff:.0f}s, "
+                        f"longer than the {max_retry_wait:.0f}s budget",
+                        retry_after=retry_after,
+                    )
                 if attempt == self.max_retries:
                     raise RateLimitedError(
                         f"{response.status_code} from {host} after {attempt} attempts",

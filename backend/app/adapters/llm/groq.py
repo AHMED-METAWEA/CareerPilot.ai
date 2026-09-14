@@ -30,6 +30,15 @@ log = structlog.get_logger(__name__)
 BASE_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
+LLM_RETRY_WAIT_BUDGET = 8.0
+"""Seconds of rate-limit backoff a provider will absorb before handing over.
+
+The chain exists precisely so that a busy provider is not worth waiting for.
+Groq's free tier answers 429 with `Retry-After` values up to forty-five seconds;
+absorbing that inside the provider meant a matching run paid it on every
+posting, while a configured fallback sat idle three seconds away."""
+
+
 class GroqProvider(ChatProvider):
     name = "groq"
 
@@ -69,6 +78,7 @@ class GroqProvider(ChatProvider):
                     "Content-Type": "application/json",
                 },
                 json=payload,
+                max_retry_wait=LLM_RETRY_WAIT_BUDGET,
             )
         except RateLimitedError as exc:
             raise ProviderRateLimited(f"groq rate limited: {exc}", exc.retry_after) from exc

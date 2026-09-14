@@ -157,3 +157,60 @@ def test_robots_is_fetched_once_and_cached(client: HttpClient) -> None:
     for _ in range(5):
         robots.allowed("https://example.com/jobs/1")
     assert route.call_count == 1
+
+
+@respx.mock
+def test_a_rate_limit_longer_than_the_budget_hands_over_rather_than_waits(
+    http_client: HttpClient,
+) -> None:
+    """Honouring a long `Retry-After` is right when this client is the only way
+    to the data. Behind a fallback chain it is not: Groq's free tier asks for up
+    to forty-five seconds, and absorbing that inside the provider meant a
+    matching run paid it on every posting while a configured fallback sat idle
+    three seconds away.
+    """
+    route = respx.get("https://example.test/slow").mock(
+        return_value=httpx.Response(429, headers={"Retry-After": "45"})
+    )
+
+    with pytest.raises(RateLimitedError) as exc:
+        http_client.request("GET", "https://example.test/slow", max_retry_wait=8.0)
+
+    assert route.call_count == 1, "it must not sleep and retry past the budget"
+    assert exc.value.retry_after == 45.0, "the caller still learns how long was asked for"
+
+
+@respx.mock
+def test_a_rate_limit_inside_the_budget_is_still_waited_out(
+    http_client: HttpClient,
+) -> None:
+    """The budget is a ceiling, not a refusal to retry at all."""
+    route = respx.get("https://example.test/brief").mock(
+        side_effect=[
+            httpx.Response(429, headers={"Retry-After": "1"}),
+            httpx.Response(200, json={"ok": True}),
+        ]
+    )
+
+    response = http_client.request("GET", "https://example.test/brief", max_retry_wait=8.0)
+
+    assert response.status_code == 200
+    assert route.call_count == 2
+
+
+@respx.mock
+def test_without_a_budget_a_long_retry_after_is_still_honoured(
+    http_client: HttpClient,
+) -> None:
+    """ATS boards have no fallback, so the old behaviour has to survive."""
+    route = respx.get("https://example.test/board").mock(
+        side_effect=[
+            httpx.Response(429, headers={"Retry-After": "30"}),
+            httpx.Response(200, json={"jobs": []}),
+        ]
+    )
+
+    response = http_client.request("GET", "https://example.test/board")
+
+    assert response.status_code == 200
+    assert route.call_count == 2
