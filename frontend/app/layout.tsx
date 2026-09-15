@@ -27,6 +27,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </Link>
             {signedIn ? (
               <>
+                {/* First, because it is the step everything else depends on —
+                    and because without it the upload page was reachable only
+                    on the redirect straight after registering. A candidate who
+                    wanted to replace their CV had nowhere to click. */}
+                <Link href="/onboarding" className="text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]">
+                  {t("nav.cv")}
+                </Link>
                 <Link href="/matches" className="text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]">
                   {t("nav.matches")}
                 </Link>

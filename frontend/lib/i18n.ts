@@ -47,6 +47,7 @@ export async function currentLocale(): Promise<Locale> {
 
 const en = {
   // Chrome
+  "nav.cv": "Your CV",
   "nav.matches": "Matches",
   "nav.applications": "Applications",
   "nav.settings": "Settings",
@@ -114,6 +115,7 @@ const en = {
 export type MessageKey = keyof typeof en;
 
 const ar: Partial<Record<MessageKey, string>> = {
+  "nav.cv": "سيرتك الذاتية",
   "nav.matches": "الوظائف المرشحة",
   "nav.applications": "طلباتي",
   "nav.settings": "الإعدادات",
