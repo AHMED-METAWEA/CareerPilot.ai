@@ -225,6 +225,18 @@ def parse_employment_type(value: str | None) -> EmploymentType | None:
 
 # ── Locations ─────────────────────────────────────────────────────────
 
+# fmt: off
+_US_STATES = frozenset({
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL",
+    "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT",
+    "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI",
+    "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "DC",
+})
+# fmt: on
+"""Read only after a city name. Several collide with country codes — CA, DE, IN,
+LA, MD, MT, NE — so position is what disambiguates them."""
+
+
 _COUNTRY_HINTS: dict[str, str] = {
     "egypt": "EG",
     "مصر": "EG",
@@ -244,8 +256,81 @@ _COUNTRY_HINTS: dict[str, str] = {
     "united states": "US",
     "usa": "US",
     "u.s.": "US",
+    # Bare "us" was missing, and it is how employers most often write it:
+    # "Remote - US", "Remote US". Safe as a word-boundary match because this
+    # only ever runs over a location field — "Columbus" and "Belarus" do not
+    # match, and no location string uses "us" as a pronoun.
+    "us": "US",
+    "united states of america": "US",
     "new york": "US",
+    "nyc": "US",
     "san francisco": "US",
+    "seattle": "US",
+    "austin": "US",
+    "boston": "US",
+    "chicago": "US",
+    "los angeles": "US",
+    "denver": "US",
+    "atlanta": "US",
+    "dallas": "US",
+    "san mateo": "US",
+    "palo alto": "US",
+    "mountain view": "US",
+    "san jose": "US",
+    "san diego": "US",
+    "washington dc": "US",
+    "miami": "US",
+    "philadelphia": "US",
+    "phoenix": "US",
+    "portland": "US",
+    "detroit": "US",
+    "houston": "US",
+    "dublin, ca": "US",
+    "singapore": "SG",
+    "australia": "AU",
+    "sydney": "AU",
+    "melbourne": "AU",
+    "japan": "JP",
+    "tokyo": "JP",
+    "brazil": "BR",
+    "mexico": "MX",
+    "israel": "IL",
+    "tel aviv": "IL",
+    "nigeria": "NG",
+    "lagos": "NG",
+    "kenya": "KE",
+    "nairobi": "KE",
+    "south africa": "ZA",
+    "pakistan": "PK",
+    "indonesia": "ID",
+    "philippines": "PH",
+    "vietnam": "VN",
+    "argentina": "AR",
+    "colombia": "CO",
+    "sweden": "SE",
+    "stockholm": "SE",
+    "norway": "NO",
+    "denmark": "DK",
+    "copenhagen": "DK",
+    "finland": "FI",
+    "helsinki": "FI",
+    "switzerland": "CH",
+    "zurich": "CH",
+    "austria": "AT",
+    "vienna": "AT",
+    "belgium": "BE",
+    "italy": "IT",
+    "milan": "IT",
+    "greece": "GR",
+    "athens": "GR",
+    "hungary": "HU",
+    "budapest": "HU",
+    "bulgaria": "BG",
+    "ukraine": "UA",
+    "lebanon": "LB",
+    "beirut": "LB",
+    "algeria": "DZ",
+    "oman": "OM",
     "germany": "DE",
     "berlin": "DE",
     "munich": "DE",
@@ -301,7 +386,11 @@ def parse_location(raw: str | None) -> JobLocation | None:
 
     country: str | None = None
     for hint, code in _COUNTRY_HINTS.items():
-        if re.search(rf"\b{re.escape(hint)}\b", lowered):
+        # Lookaround rather than `\b`, because several hints end in punctuation.
+        # "u.s." with a trailing `\b` requires a word character after the final
+        # dot, which never exists at the end of a string — so "Remote U.S." was
+        # matching nothing at all while "Remote USA" matched fine.
+        if re.search(rf"(?<!\w){re.escape(hint)}(?!\w)", lowered):
             country = code
             break
 
@@ -310,6 +399,14 @@ def parse_location(raw: str | None) -> JobLocation | None:
     if city and _REMOTE.fullmatch(city.strip()):
         city = None
     region = parts[1] if len(parts) > 2 else None
+
+    # "Foster City, CA" is California; "Remote - CA" is far more likely Canada.
+    # The difference is whether a real city precedes the code, so a state is
+    # only read in that position. Where it is genuinely ambiguous the country
+    # stays unset, which is the honest answer — §8.3 would rather hide nothing
+    # than gate on a guess.
+    if country is None and city and len(parts) >= 2 and parts[-1].strip().upper() in _US_STATES:
+        country = "US"
     return JobLocation(raw=text, city=city, region=region, country=country, is_remote=is_remote)
 
 

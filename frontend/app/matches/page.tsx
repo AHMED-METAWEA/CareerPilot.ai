@@ -6,14 +6,21 @@ import { api, ApiError, isSignedIn, type MatchCardData, type MatchList } from "@
 export default async function MatchesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ min?: string; remote?: string }>;
+  searchParams: Promise<{
+    min?: string;
+    remote?: string;
+    location?: string;
+    kind?: string;
+  }>;
 }) {
   if (!(await isSignedIn())) redirect("/login");
-  const { min, remote } = await searchParams;
+  const { min, remote, location, kind } = await searchParams;
 
   const query = new URLSearchParams();
   if (min) query.set("min_percentile", min);
   if (remote === "true") query.set("remote", "true");
+  if (location) query.set("location", location);
+  if (kind) query.set("kind", kind);
 
   let data: MatchList;
   try {
@@ -24,7 +31,13 @@ export default async function MatchesPage({
   }
 
   if (data.matches.length === 0) {
-    return <EmptyState poolSize={data.pool_size} refreshing={data.refresh_in_progress} />;
+    return (
+      <EmptyState
+        poolSize={data.pool_size}
+        refreshing={data.refresh_in_progress}
+        filtered={Boolean(location || kind || min || remote === "true")}
+      />
+    );
   }
 
   return (
@@ -42,10 +55,43 @@ export default async function MatchesPage({
         </Link>
       </header>
 
-      <div className="mt-4 flex gap-2 text-xs">
-        <Filter href="/matches" label="All" active={!min && remote !== "true"} />
-        <Filter href="/matches?min=90" label="Top 10%" active={min === "90"} />
-        <Filter href="/matches?remote=true" label="Remote only" active={remote === "true"} />
+      {/* Two independent axes, kept on separate rows so it is obvious they
+          combine rather than replace one another. The querystring carries both,
+          so a filtered list is a link somebody can bookmark or send. */}
+      <div className="mt-4 space-y-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[var(--color-ink-soft)]">Where</span>
+          <Filter href={withFilters({ kind, min, remote })} label="Anywhere" active={!location} />
+          <Filter
+            href={withFilters({ kind, min, remote, location: "Egypt" })}
+            label="Egypt"
+            active={location === "Egypt"}
+          />
+          <Filter
+            href={withFilters({ kind, min, remote: "true" })}
+            label="Remote"
+            active={remote === "true"}
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[var(--color-ink-soft)]">What</span>
+          <Filter href={withFilters({ location, min, remote })} label="Everything" active={!kind} />
+          <Filter
+            href={withFilters({ location, min, remote, kind: "job" })}
+            label="Jobs"
+            active={kind === "job"}
+          />
+          <Filter
+            href={withFilters({ location, min, remote, kind: "internship" })}
+            label="Internships"
+            active={kind === "internship"}
+          />
+          <Filter
+            href={withFilters({ location, remote, kind, min: "90" })}
+            label="Top 10%"
+            active={min === "90"}
+          />
+        </div>
       </div>
 
       <div className="mt-5 space-y-4">
@@ -72,7 +118,43 @@ function Filter({ href, label, active }: { href: string; label: string; active: 
   );
 }
 
-function EmptyState({ poolSize, refreshing }: { poolSize: number; refreshing: boolean }) {
+function withFilters(next: Record<string, string | undefined>) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(next)) {
+    if (value) query.set(key, value);
+  }
+  const rendered = query.toString();
+  return rendered ? `/matches?${rendered}` : "/matches";
+}
+
+function EmptyState({
+  poolSize,
+  refreshing,
+  filtered = false,
+}: {
+  poolSize: number;
+  refreshing: boolean;
+  filtered?: boolean;
+}) {
+  // A filtered list that comes back empty is not an empty shortlist, and
+  // telling someone to upload a CV because they asked for Egypt would be the
+  // same mistake in a new place.
+  if (filtered && poolSize > 0) {
+    return (
+      <div className="mx-auto max-w-lg py-10 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight">Nothing here yet</h1>
+        <p className="mt-3 text-sm text-[var(--color-ink-soft)]">
+          Your shortlist has {poolSize.toLocaleString()} roles, but none match this filter.
+          Egyptian and internship postings are a small share of what the sources publish —
+          the corpus holds far more remote and European roles than local ones.
+        </p>
+        <Link href="/matches" className="mt-6 inline-block text-sm underline">
+          Show everything
+        </Link>
+      </div>
+    );
+  }
+
   // An empty list has three quite different meanings, and telling a candidate
   // the wrong one is worse than telling them nothing. Someone whose run is
   // still going was previously shown "No matches yet — Upload a CV", which is

@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
@@ -36,6 +36,7 @@ from app.adapters.embeddings.base import (
 )
 from app.adapters.llm.base import ChatProvider, LLMError, complete_schema
 from app.config import AppConfig
+from app.domain.jobs.normalize import parse_location
 from app.domain.jobs.requirements import (
     REQUIREMENTS_SYSTEM_PROMPT,
     ExtractedRequirements,
@@ -736,7 +737,14 @@ class MatchingService:
             years_experience=float(row.years_experience) if row.years_experience else None,
             seniority_level=Seniority(row.seniority_level) if row.seniority_level else None,
             locations=locations,
-            countries=tuple(auth.country for auth in work_auth),
+            # Where the candidate says they are, not only where they have said
+            # they may legally work. Work authorisation is stated on a minority
+            # of CVs, so deriving countries from it alone left the field empty
+            # for almost everybody — and the location gate only fires when both
+            # sides name a country. A Cairo-based candidate whose profile said
+            # "Cairo, Egypt" was therefore never gated against anything, and
+            # their entire shortlist came back US-restricted.
+            countries=_candidate_countries(locations, work_auth),
             work_authorization=work_auth,
             languages=languages,
             skills=skills,
@@ -753,6 +761,23 @@ class MatchingService:
         parts = [" ".join(sorted(candidate.skills))]
         parts.extend(candidate.bullets[:8])
         return " ".join(part for part in parts if part)[:4000]
+
+
+def _candidate_countries(
+    locations: tuple[str, ...], work_auth: Sequence[WorkAuthorization]
+) -> tuple[str, ...]:
+    """Country codes the candidate is plausibly in, from both things they said.
+
+    Authorisation is the stronger claim and locations the more commonly stated
+    one; a candidate is treated as reachable in either. Unparseable locations
+    contribute nothing rather than a guess.
+    """
+    codes = {auth.country.upper() for auth in work_auth if auth.country}
+    for location in locations:
+        parsed = parse_location(location)
+        if parsed and parsed.country:
+            codes.add(parsed.country.upper())
+    return tuple(sorted(codes))
 
 
 def _posting_snapshot(row: Any) -> PostingSnapshot:

@@ -19,6 +19,40 @@ from app.services.matching import MODEL_VERSION
 pytestmark = pytest.mark.db
 
 
+def _profile_for(db_session: Session, user_id: uuid.UUID) -> uuid.UUID:
+    """The account fixture's profile, or a bare one to hang matches on."""
+    existing = db_session.execute(
+        sa.text("SELECT id FROM candidate_profiles WHERE user_id = :u LIMIT 1"), {"u": user_id}
+    ).scalar_one_or_none()
+    if existing is not None:
+        return uuid.UUID(str(existing))
+    document_id = db_session.execute(
+        sa.text(
+            "INSERT INTO cv_documents (user_id, storage_key, mime, sha256) "
+            "VALUES (:u, 'k', 'text/plain', :s) RETURNING id"
+        ),
+        {"u": user_id, "s": uuid.uuid4().hex * 2},
+    ).scalar_one()
+    version_id = db_session.execute(
+        sa.text(
+            "INSERT INTO cv_versions (cv_document_id, version, raw_text, parse_quality, "
+            "parser_version) VALUES (:d, 1, 'cv', 0.9, 't') RETURNING id"
+        ),
+        {"d": document_id},
+    ).scalar_one()
+    return uuid.UUID(
+        str(
+            db_session.execute(
+                sa.text(
+                    "INSERT INTO candidate_profiles (user_id, cv_version_id) "
+                    "VALUES (:u, :v) RETURNING id"
+                ),
+                {"u": user_id, "v": version_id},
+            ).scalar_one()
+        )
+    )
+
+
 @pytest.fixture
 def client() -> TestClient:
     return TestClient(app)
@@ -395,3 +429,90 @@ def test_an_empty_shortlist_says_whether_a_run_is_still_going(
     db_session.commit()
 
     assert client.get("/api/v1/matches", headers=headers).json()["refresh_in_progress"] is True
+
+
+def test_the_shortlist_can_be_filtered_by_place_and_by_kind(
+    client: TestClient, db_session: Session, account: tuple[uuid.UUID, dict[str, str]]
+) -> None:
+    """§12.3 lists a `location` filter that was never implemented, and a
+    candidate looking for work in one country had no way to ask for it.
+
+    Place is matched against the posting's own words rather than a normalised
+    country: employers write "Cairo, Egypt", "Remote - Egypt" and "Giza", and
+    normalisation reaches only some of them.
+    """
+    user_id, headers = account
+    profile_id = _profile_for(db_session, user_id)
+    source_id = db_session.execute(
+        sa.text(
+            "INSERT INTO job_sources (adapter, name, config) "
+            "VALUES ('greenhouse', :n, '{}'::jsonb) RETURNING id"
+        ),
+        {"n": f"gh:{uuid.uuid4().hex[:8]}"},
+    ).scalar_one()
+
+    seeded = {
+        "cairo_job": ("Data Engineer", '[{"raw": "Cairo, Egypt"}]', "full_time", None),
+        "cairo_intern": ("Data Engineering Intern", '[{"raw": "Giza, Egypt"}]', None, None),
+        "berlin_job": ("Data Engineer", '[{"raw": "Berlin, Germany"}]', "full_time", None),
+        "berlin_intern": ("Summer Trainee", '[{"raw": "Berlin, Germany"}]', "internship", None),
+    }
+    for key, (title, locations, employment, seniority) in seeded.items():
+        posting_id = db_session.execute(
+            sa.text(
+                """
+                INSERT INTO job_postings (source_id, external_id, title, title_normalized,
+                    description_text, apply_url, source_url, status, locations,
+                    employment_type, seniority_level)
+                VALUES (:s, :e, :t, lower(:t), 'b', :u, :u, 'open',
+                        CAST(:locs AS jsonb), :emp, :sen)
+                RETURNING id
+                """
+            ),
+            {
+                "s": source_id,
+                "e": key,
+                "t": title,
+                "u": f"https://x.test/{key}",
+                "locs": locations,
+                "emp": employment,
+                "sen": seniority,
+            },
+        ).scalar_one()
+        db_session.execute(
+            sa.text(
+                """
+                INSERT INTO matches (user_id, profile_id, posting_id, total_score, percentile,
+                    gate_passed, subscores, model_version)
+                VALUES (:u, :p, :j, 0.8, 90, true, '{}'::jsonb, :mv)
+                """
+            ),
+            {"u": user_id, "p": profile_id, "j": posting_id, "mv": MODEL_VERSION},
+        )
+    db_session.commit()
+
+    def titles(query: str) -> set[str]:
+        body = client.get(f"/api/v1/matches?{query}", headers=headers).json()
+        return {row["title"] for row in body["matches"]}
+
+    assert titles("location=Egypt") == {"Data Engineer", "Data Engineering Intern"}
+    assert titles("location=Giza") == {"Data Engineering Intern"}
+
+    # Kind reads three signals, because no single one covers the corpus: the
+    # Egyptian internship says so only in its title, the Berlin one only in
+    # `employment_type`.
+    assert titles("kind=internship") == {"Data Engineering Intern", "Summer Trainee"}
+    assert titles("kind=job") == {"Data Engineer"}
+
+    assert titles("location=Egypt&kind=internship") == {"Data Engineering Intern"}
+
+
+def test_the_percentile_pool_is_not_narrowed_by_a_filter(
+    client: TestClient, db_session: Session, account: tuple[uuid.UUID, dict[str, str]]
+) -> None:
+    """A percentile is standing in the whole assessed pool, not within whichever
+    tab is open — otherwise "top 5%" means something different on every tab."""
+    _, headers = account
+    unfiltered = client.get("/api/v1/matches", headers=headers).json()["pool_size"]
+    filtered = client.get("/api/v1/matches?location=Egypt", headers=headers).json()["pool_size"]
+    assert filtered == unfiltered

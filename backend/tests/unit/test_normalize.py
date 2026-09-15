@@ -142,3 +142,50 @@ def test_underscores_do_not_survive_normalisation() -> None:
     single-character wildcard in the SQL LIKE that loads dedup candidates."""
     assert normalize_title("Senior_Backend Engineer") == "senior backend engineer"
     assert "_" not in normalize_title("data_engineer_ii")
+
+
+# ── Country parsing, and why a Cairo shortlist filled with US roles ───
+
+
+@pytest.mark.parametrize(
+    ("raw", "country"),
+    [
+        # The formats employers actually use. "usa" was mapped and bare "us" was
+        # not, so the most common American spelling yielded no country at all —
+        # and a gate that only fires on a stated country could not fire.
+        ("Remote - US", "US"),
+        # A trailing `\b` after "u.s." requires a word character after the final
+        # dot, which never exists at the end of a string — so this matched
+        # nothing while "Remote USA" matched fine.
+        ("Remote U.S.", "US"),
+        ("Remote US", "US"),
+        ("Remote - USA", "US"),
+        ("Remote - United States", "US"),
+        ("NYC (SoHo)", "US"),
+        ("Remote - Singapore", "SG"),
+        ("Cairo, Egypt", "EG"),
+        ("Remote - Egypt", "EG"),
+        ("Berlin, Germany", "DE"),
+        ("Remote", None),
+    ],
+)
+def test_country_is_read_from_the_forms_employers_write(raw: str, country: str | None) -> None:
+    assert parse_location(raw).country == country
+
+
+def test_a_state_code_after_a_city_means_the_united_states() -> None:
+    assert parse_location("Foster City, CA").country == "US"
+    assert parse_location("Austin, TX").country == "US"
+
+
+def test_an_ambiguous_state_code_is_left_unset() -> None:
+    """ "Remote - CA" alongside "Remote - US" is Canada, not California. With no
+    city to anchor it the code is genuinely ambiguous, and §8.3 would rather
+    leave a field empty than gate a candidate's shortlist on a guess."""
+    assert parse_location("Remote - CA").country is None
+    assert parse_location("Remote - DE").country is None
+
+
+def test_a_word_containing_us_is_not_a_country() -> None:
+    assert parse_location("Columbus, OH").country == "US"  # via the state code
+    assert parse_location("Belarus").country is None

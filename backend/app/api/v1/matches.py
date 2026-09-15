@@ -12,7 +12,7 @@ or rewritten (§12.7).
 from __future__ import annotations
 
 import uuid
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import text
@@ -59,12 +59,33 @@ def refresh(
 def list_matches(
     min_percentile: float = Query(default=0.0, ge=0, le=100),
     remote: bool | None = Query(default=None),
+    location: str | None = Query(
+        default=None,
+        max_length=60,
+        description="Match roles in this place, e.g. 'Egypt' or 'Cairo'.",
+    ),
+    kind: Literal["job", "internship"] | None = Query(
+        default=None, description="Split early-career entry points from ordinary roles."
+    ),
     limit: int = Query(default=20, le=100),
     cursor: int = Query(default=0, ge=0),
     user_id: uuid.UUID = Depends(current_user_id),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
-    """The ranked shortlist, percentile-presented."""
+    """The ranked shortlist, percentile-presented.
+
+    `location` matches the posting's own location text rather than a normalised
+    country code. The corpus states places in whatever words the employer used
+    — "Cairo, Egypt", "Remote - Egypt", "Giza" — and normalisation only reaches
+    some of them, so a substring search over the raw text finds roles a country
+    filter would miss.
+
+    `kind` splits internships from ordinary roles. Three signals are used
+    because no single one is reliable: the extracted employment type, the
+    inferred seniority, and the title itself. Of the corpus, 301 postings
+    declare `employment_type = internship` while 590 say so only in the title,
+    and a filter reading one field would hide half of them.
+    """
     rows = session.execute(
         text(
             """
@@ -81,6 +102,21 @@ def list_matches(
                -- parameter that is only ever compared with NULL.
                AND (CAST(:remote AS boolean) IS NULL
                     OR (p.remote_type = 'remote') = CAST(:remote AS boolean))
+               AND (CAST(:location AS text) IS NULL
+                    OR p.locations::text ILIKE '%' || CAST(:location AS text) || '%')
+               -- COALESCE is load-bearing: `employment_type` and
+               -- `seniority_level` are nullable, and in three-valued logic
+               -- `false OR NULL` is NULL, not false. Without it, `kind=job`
+               -- silently returned nothing at all — every ordinary role has a
+               -- null in at least one of these columns.
+               AND (CAST(:kind AS text) IS NULL
+                    OR (CAST(:kind AS text) = 'internship') = COALESCE(
+                        p.employment_type = 'internship'
+                        OR p.seniority_level = 'intern'
+                        OR p.title ~* '(intern|internship|trainee|co[- ]?op|placement'
+                                      '|graduate program|summer program)',
+                        false
+                    ))
              ORDER BY m.total_score DESC, m.id
              LIMIT :limit OFFSET :cursor
             """
@@ -90,11 +126,17 @@ def list_matches(
             "model_version": MODEL_VERSION,
             "min_percentile": min_percentile,
             "remote": remote,
+            "location": location,
+            "kind": kind,
             "limit": limit,
             "cursor": cursor,
         },
     ).all()
 
+    # Deliberately unfiltered: the percentile a candidate is shown is their
+    # standing in their whole assessed pool, not within whichever tab is open.
+    # Recomputing it per filter would make "top 5%" mean something different on
+    # every tab, which is exactly the kind of number §8.5 refuses to print.
     pool_size = session.execute(
         text(
             "SELECT count(*) FROM matches WHERE user_id = :user_id AND gate_passed "

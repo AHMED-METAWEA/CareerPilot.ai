@@ -82,7 +82,17 @@ def test_work_authorisation() -> None:
 
 
 def test_location_gate_only_bites_where_presence_is_required() -> None:
-    assert failures(remote_type=RemoteType.REMOTE, countries=("US",)) == set()
+    """Presence includes the jurisdiction a remote role is restricted to.
+
+    This case used to assert that a US-restricted remote role passed for a
+    Cairo-based candidate, on the reasoning that remote work needs no presence.
+    Run against the real corpus that turned out to be wrong in the way that
+    matters: "Remote - USA" is remote *within the US*, and the candidate's
+    entire shortlist filled with roles they could not take.
+    """
+    assert failures(remote_type=RemoteType.REMOTE, countries=("US",)) == {GateFailure.LOCATION}
+    assert failures(remote_type=RemoteType.REMOTE, countries=("EG",)) == set()
+    assert failures(remote_type=RemoteType.REMOTE, countries=()) == set()
     assert failures(remote_type=RemoteType.ONSITE, countries=("DE",)) == {GateFailure.LOCATION}
     assert failures(remote_type=RemoteType.HYBRID, countries=("DE",)) == {GateFailure.LOCATION}
     assert failures(remote_type=RemoteType.ONSITE, countries=("EG",)) == set()
@@ -154,3 +164,52 @@ def test_every_failure_is_reported_with_a_reason() -> None:
     )
     assert len(result.failures) == 4
     assert all(reason and reason[0].isupper() for reason in result.reasons())
+
+
+# ── "Remote" is not a synonym for "anywhere" (§8.3) ───────────────────
+
+
+def test_a_remote_role_restricted_to_another_country_is_gated_out() -> None:
+    """Employers write "Remote - USA" and mean it: remote *within a
+    jurisdiction*, for tax and employment reasons enthusiasm does not overcome.
+
+    Passing every remote posting on the strength of the word alone gave a
+    Cairo-based candidate a shortlist of fifty roles, every one US-restricted,
+    crowding out the ones they could actually take.
+    """
+    assert GateFailure.LOCATION in failures(remote_type=RemoteType.REMOTE, countries=("US",))
+
+
+def test_a_remote_role_in_the_candidates_own_country_passes() -> None:
+    assert GateFailure.LOCATION not in failures(remote_type=RemoteType.REMOTE, countries=("EG",))
+
+
+def test_a_remote_role_open_to_several_countries_passes_if_one_matches() -> None:
+    assert GateFailure.LOCATION not in failures(
+        remote_type=RemoteType.REMOTE, countries=("EG", "AE", "SA")
+    )
+
+
+def test_a_bare_remote_role_still_passes() -> None:
+    """Silence about location is not a reason to hide a role. Most remote
+    postings say nothing about jurisdiction, and gating on absence would hide
+    the majority of genuinely open roles."""
+    assert GateFailure.LOCATION not in failures(remote_type=RemoteType.REMOTE, countries=())
+
+
+def test_a_candidate_who_declared_no_country_is_not_gated() -> None:
+    """The gate cannot fire honestly against something the candidate never said."""
+    anonymous = CandidateSnapshot(
+        profile_id="p2",
+        years_experience=3,
+        seniority_level=Seniority.MID,
+        locations=(),
+        countries=(),
+        work_authorization=(),
+        languages=(),
+        skills=frozenset({"Python"}),
+    )
+    result = evaluate_gates(
+        anonymous, posting(remote_type=RemoteType.REMOTE, countries=("US",)), CONFIG, now=NOW
+    )
+    assert GateFailure.LOCATION not in result.failures

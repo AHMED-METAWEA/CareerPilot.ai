@@ -333,3 +333,31 @@ def test_rerunning_is_idempotent(
         == 1
     )
     assert MODEL_VERSION
+
+
+def test_a_candidates_country_comes_from_where_they_say_they_are() -> None:
+    """The location gate only fires when both sides name a country, and the
+    candidate's side was read from work authorisation alone.
+
+    Most CVs never state work authorisation, so the field was empty for almost
+    everybody and the gate could not fire at all. A Cairo-based candidate whose
+    profile said "Cairo, Egypt" was never gated against anything, and their
+    whole shortlist came back US-restricted.
+    """
+    from app.domain.models import WorkAuthorization
+    from app.services.matching import _candidate_countries
+
+    assert _candidate_countries(("Cairo, Egypt",), []) == ("EG",)
+    assert _candidate_countries(("Berlin, Germany",), []) == ("DE",)
+
+    # Authorisation still counts, and the two are a union rather than a choice:
+    # someone living in Egypt with the right to work in the UK is reachable in
+    # both.
+    assert _candidate_countries(
+        ("Cairo, Egypt",), [WorkAuthorization(country="GB", status="citizen")]
+    ) == ("EG", "GB")
+
+    # An unparseable location contributes nothing rather than a guess, which
+    # leaves the gate unable to fire — the honest outcome (§8.3).
+    assert _candidate_countries(("somewhere nice",), []) == ()
+    assert _candidate_countries((), []) == ()

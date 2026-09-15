@@ -45,7 +45,10 @@ HUMAN_READABLE: dict[GateFailure, str] = {
         "This role needs work authorisation you have not declared, and the employer "
         "does not mention sponsorship."
     ),
-    GateFailure.LOCATION: "This role is on-site or hybrid outside the locations you gave.",
+    GateFailure.LOCATION: (
+        "This role is outside the locations you gave — either on-site somewhere you "
+        "are not, or remote but restricted to another country."
+    ),
     GateFailure.SENIORITY_FLOOR: "This role states a minimum experience level well above yours.",
     GateFailure.LANGUAGE: "This role requires a language level you have not declared.",
     GateFailure.FRESHNESS: "This posting is older than the freshness window.",
@@ -119,9 +122,27 @@ def _work_authorization_ok(candidate: CandidateSnapshot, posting: PostingSnapsho
 
 
 def _location_ok(candidate: CandidateSnapshot, posting: PostingSnapshot) -> bool:
-    """Remote roles always pass. On-site and hybrid must be somewhere reachable."""
+    """On-site and hybrid must be reachable; remote must be open where they are.
+
+    "Remote" is not a synonym for "anywhere". Employers write "Remote - USA" and
+    "Remote - Singapore" and mean it: the role is remote *within a jurisdiction*,
+    for tax and employment reasons that no amount of enthusiasm overcomes. This
+    gate used to pass every remote posting on the strength of the word alone,
+    and a Cairo-based candidate's entire shortlist came back US-restricted —
+    fifty roles, every one of them unreachable, crowding out the ones that were.
+
+    The restriction only fires when both sides have stated a country. A bare
+    "Remote" says nothing about where, and silence is not a reason to hide a
+    role (§8.3).
+    """
     if posting.remote_type is RemoteType.REMOTE:
-        return candidate.open_to_remote
+        if not candidate.open_to_remote:
+            return False
+        remote_countries = {country.upper() for country in posting.countries if country}
+        candidate_countries = {country.upper() for country in candidate.countries}
+        if remote_countries and candidate_countries:
+            return bool(remote_countries & candidate_countries)
+        return True
     if posting.remote_type is None and not posting.countries and not posting.cities:
         return True  # nothing stated: not a reason to hide the role
     if not candidate.countries and not candidate.locations:
